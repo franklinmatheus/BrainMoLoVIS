@@ -1,9 +1,20 @@
+# adicionar campos de nome (campo de identificação do usuário/anônimo), data e hora (monitoring only)
+# barras de atençao e meditação próximas do valor (ao lado e pequeno)
+# remover valores egg power
+# alpha normalizado de 0:100 -> meditação
+# reset (zerar dados dos gráficos)
+# linha da média esense (pode adcionar ou remover através de um botão)
+# mudar deltaT do eixo X (10s, 30s e 60s)
+# atenção (3ª coluna): theta/beta
+# meditação (3ª coluna): alpha (norm 0-100)
+# 3ª coluna: visualizar média e não (opcional em checkbox)
+
 from datetime import datetime
 import os
 import socket
 from threading import Thread
 import time
-from tkinter import Button, Entry, Frame, IntVar, Label, LabelFrame, Menu, Radiobutton, Scrollbar, Text, Tk, Toplevel, font, messagebox
+from tkinter import Button, Entry, Frame, IntVar, Label, LabelFrame, Menu, PhotoImage, Radiobutton, Text, Tk, Toplevel, font, messagebox
 from tkinter.filedialog import askdirectory
 from tkcalendar import DateEntry
 from tkinter.ttk import Notebook, Style
@@ -13,10 +24,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 from common import CONNECTED, DISCONNECTED, GREEN, LIGHT_GREY, RED,  LIGHT_GREY, GREY
+from safelist import SafeList
 
 class App():
 
-    def reading_data(self) -> None:
+    def receive_socket_mindwave_data(self) -> None:
         host = '127.0.0.1'
         port = 13854
         param = '{"enableRawOutput": true, "format": "Json"}'
@@ -44,38 +56,19 @@ class App():
                         temp = data.decode('utf-8')
                         file.write(temp)
                         if 'rawEeg' in temp:
-                            try: 
-                                self.__raw_eeg_data.append(int(temp.split('rawEeg":')[1].split('}')[0]))
-                                self.__xmax_raw += 1
+                            try: self.__raw_eeg_data.append(int(temp.split('rawEeg":')[1].split('}')[0]))
                             except ValueError: self.__raw_eeg_data.append(0)
-                            
-                            if len(self.__raw_eeg_data) > 100: 
-                                self.__raw_eeg_data.pop(0)
-                                if self.__xmax_raw - self.__xmin_raw > 100: self.__xmin_raw += 1
-                        
+                                
                         if 'attention' in temp:
-                            try: 
-                                self.__attention.append(int(temp.split('attention":')[1].split(',')[0]))
-                                self.__xmax_at += 1
+                            try: self.__attention.append(int(temp.split('attention":')[1].split(',')[0]))
                             except ValueError: self.__attention.append(0)
                             
-                            if len(self.__attention) > 25:
-                                self.__attention.pop(0)
-                                if self.__xmax_at - self.__xmin_at > 25: self.__xmin_at += 1
-                                
                         if 'meditation' in temp:    
-                            try: 
-                                self.__meditation.append(int(temp.split('meditation":')[1].split('}')[0]))
-                                self.__xmax_med += 1
+                            try: self.__meditation.append(int(temp.split('meditation":')[1].split('}')[0]))
                             except ValueError: self.__meditation.append(0)
-
-                            if len(self.__meditation) > 25:
-                                self.__meditation.pop(0)
-                                if self.__xmax_med - self.__xmin_med > 25: self.__xmin_med += 1
-
+                            
                         if 'blinkStrength' in temp:
-                            try: 
-                                self.__blink = int(temp.split('blinkStrength":')[1].split('}')[0])
+                            try: self.__blink = int(temp.split('blinkStrength":')[1].split('}')[0])
                             except ValueError: self.__blink = 0
 
                         if 'eegPower' in temp:
@@ -103,137 +96,143 @@ class App():
                             try: self.__eeg_power['highGamma'] = int(temp.split('highGamma":')[1].split('}')[0])
                             except ValueError: self.__eeg_power['highGamma'] = 0
 
-    
-    def monitoring_window(self) -> None:
+    def monitor_logger_window(self) -> None:
         window = Toplevel(padx=10)
         window.title('Brain Monitor')
         window.iconbitmap('./icon/favicon.ico')
         window.attributes('-fullscreen',True)
         window.grab_set()
 
-        self.__raw_eeg_data = []
-        self.__attention = []
-        self.__meditation = []
+        self.__raw_eeg_data = SafeList(100)
+        self.__attention = SafeList(25)
+        self.__meditation = SafeList(25)
         self.__eeg_power = {'delta': 0, 'theta': 0, 'lowAlpha': 0, 'highAlpha': 0, 'lowBeta': 0, 'highBeta': 0, 'lowGamma': 0, 'highGamma': 0}
-        power_sequence = ['delta', 'theta', 'lowAlpha', 'highAlpha', 'lowBeta', 'highBeta', 'lowGamma', 'highGamma']
+        #power_sequence = ['delta', 'theta', 'lowAlpha', 'highAlpha', 'lowBeta', 'highBeta', 'lowGamma', 'highGamma']
         self.__blink = 0
-        self.__xmin_raw = 0
-        self.__xmax_raw = 0
-        self.__xmin_med = 0
-        self.__xmax_med = 0
-        self.__xmin_at = 0
-        self.__xmax_at = 0
         self.__keep_reading = True
 
-        fig = Figure()
-        ax1 = fig.add_subplot(221) # raw
-        ax2 = fig.add_subplot(347) # attention esense line
-        ax3 = fig.add_subplot(343) # blink
-        ax4 = fig.add_subplot(348) # meditation esense line
-        ax5 = fig.add_subplot(3, 4, 11) # attention esense bar
-        ax6 = fig.add_subplot(3, 4, 12) # meditation esense bar
-        ax7 = fig.add_subplot(344) # numeric values
-        ax8 = fig.add_subplot(223) # eeg power
-
-        ax1.set_ylim(0,100)
-        ax1.set_xlim(0,100)
-        line_raweeg, = ax1.plot(0, 0, lw=1)
-
-        ax2.set_ylim(0,100)
-        ax2.set_xlim(0,20)
-        line_atesense, = ax2.plot(0, 0, lw=2, color='red', label='Attention')
-
-        ax4.set_ylim(0,100)
-        ax4.set_xlim(0,20)
-        line_medesense, = ax4.plot(0, 0, lw=2, color='blue', label='Meditation')
-        
-        def animate(i):
-            if len(self.__raw_eeg_data) > 0:
-                ax1.set_ylim(min(self.__raw_eeg_data), max(self.__raw_eeg_data))
-            if self.__xmin_raw != self.__xmax_raw:
-                ax1.set_xlim(self.__xmin_raw, self.__xmax_raw)
-
-            ax1.set_title('Raw EEG')
-            line_raweeg.set_ydata(self.__raw_eeg_data)
-            line_raweeg.set_xdata(np.arange(self.__xmax_raw-len(self.__raw_eeg_data), self.__xmax_raw, 1))
-
-            # esense at
-            if self.__xmin_at != self.__xmax_at:
-                ax2.set_xlim(self.__xmin_at, self.__xmax_at)
-            ax2.set_title('eSense Attention')
-            #line_atesense.set_ydata(self.__attention)
-            #line_atesense.set_xdata(np.arange(self.__xmax_at-len(self.__attention), self.__xmax_at, 1))
-
-            # esense med
-            if self.__xmin_med != self.__xmax_med:
-                ax4.set_xlim(self.  __xmin_med, self.__xmax_med)
-            ax4.set_title('eSense Meditation')
-            #line_medesense.set_ydata(self.__meditation)
-            #line_medesense.set_xdata(np.arange(self.__xmax_med-len(self.__meditation), self.__xmax_med, 1))
-            
-            # blink
-            ax3.cla()
-            ax3.set_ylim(0,3)
-            ax3.set_xlim(0,3)
-            ax3.axes.xaxis.set_visible(False)
-            ax3.axes.yaxis.set_visible(False)
-            ax3.set_title('Blink Detection')
-            if self.__blink != 0:
-                circle = Circle((1.5,1.5), self.__blink/100, color='red')
-                ax3.add_patch(circle)
-                self.__blink = 0
-
-            # eeg power
-            ax8.cla()
-            ax8.bar(*zip(*self.__eeg_power.items()))
-            ax8.tick_params(rotation=45)
-
-            # esense attention bar
-            ax5.cla()
-            if len(self.__attention) > 0:
-                ax5.bar(*zip(*{'Attention': self.__attention[-1]}.items()))
-                ax5.set_ylim(0,100)
-
-            # esense meditation bar
-            ax6.cla()
-            if len(self.__meditation) > 0:
-                ax6.bar(*zip(*{'Meditation': self.__meditation[-1]}.items()))
-                ax6.set_ylim(0,100)
-
-            # numeric values
-            ax7.cla()
-            ax7.axes.xaxis.set_visible(False)
-            ax7.axes.yaxis.set_visible(False)
-            ax7.spines['top'].set_visible(False)
-            ax7.spines['right'].set_visible(False)
-            ax7.spines['bottom'].set_visible(False)
-            ax7.spines['left'].set_visible(False)
-            ax7.text(0, 0, 'Meditation', color='blue')
-            
-            try: curr_med = self.__meditation[-1]
-            except Exception: curr_med = 0
-            ax7.text(0, 8, curr_med, color='blue', size=44)
-            ax7.text(0, 30, 'Attention', color='red')
-            
-            try: curr_at = self.__attention[-1]
-            except Exception: curr_at = 0
-            ax7.text(0, 38, curr_at, color='red', size=44)
-            ax7.text(10, 4, 'delta: ' + str(self.__eeg_power['delta']), size=11)
-            ax7.text(10, 10, 'theta: ' + str(self.__eeg_power['theta']), size=11)
-            ax7.text(10, 16, 'lowAlpha: ' + str(self.__eeg_power['lowAlpha']), size=11)
-            ax7.text(10, 22, 'highAlpha: ' + str(self.__eeg_power['highAlpha']), size=11)
-            ax7.text(10, 28, 'lowBeta: ' + str(self.__eeg_power['lowBeta']), size=11)
-            ax7.text(10, 34, 'highBeta: ' + str(self.__eeg_power['highBeta']), size=11)
-            ax7.text(10, 40, 'lowGamma: ' + str(self.__eeg_power['lowGamma']), size=11)
-            ax7.text(10, 46, 'highGamma: ' + str(self.__eeg_power['highGamma']), size=11)
-
-            ax7.set_ylim(0,50)
-            ax7.set_xlim(0,20)
-        
-        thread = Thread(target=self.reading_data)
+        thread = Thread(target=self.receive_socket_mindwave_data)
         thread.daemon = True
         thread.start()
 
+        fig = Figure(tight_layout=True)
+        #fig.subplots_adjust(bottom=0.1, top=0.9, left=0.05, right=0.95, hspace=1.2, wspace=1)
+
+        grid = fig.add_gridspec(7, 18)
+        ax_1 = fig.add_subplot(grid[0:3,0:8]) # raw
+        ax_2 = fig.add_subplot(grid[3:,0:8]) # eeg power
+        ax_3 = fig.add_subplot(grid[0:3,8:12]) # attention esense line
+        ax_4 = fig.add_subplot(grid[0,13]) # attention esense bar
+        ax_5 = fig.add_subplot(grid[3:6,8:12]) # meditation esense line
+        ax_6 = fig.add_subplot(grid[3,13]) # meditation esense bar
+        ax_7 = fig.add_subplot(grid[-1,8:12]) # blink
+        ax_8 = fig.add_subplot(grid[0,12]) # attention value
+        ax_9 = fig.add_subplot(grid[3,12]) # attention value
+
+        ax_10 = fig.add_subplot(grid[0:3,-4:]) # custom attention
+        ax_11 = fig.add_subplot(grid[3:6,-4:]) # custom meditation
+        
+        ax_1.set_ylim(0,100)
+        ax_1.set_xlim(0,100)
+        line_raweeg, = ax_1.plot(0, 0, lw=1, color='black')
+
+        ax_3.set_ylim(0,100)
+        ax_3.set_xlim(0,20)
+        line_atesense, = ax_3.plot(0, 0, lw=2, color='red', label='Attention')
+
+        ax_5.set_ylim(0,100)
+        ax_5.set_xlim(0,20)
+        line_medesense, = ax_5.plot(0, 0, lw=2, color='blue', label='Meditation')
+        
+        def animate(i):
+            if len(self.__raw_eeg_data.get()) > 0:
+                ax_1.set_ylim(min(self.__raw_eeg_data.get()), max(self.__raw_eeg_data.get()))
+            #ax_1.set_xlim(int(self.__raw_eeg_data.length()/100)*100, int(self.__raw_eeg_data.length()/100)*100+100)
+            ax_1.set_xlim(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length())
+            
+            ax_1.set_title('Raw EEG')
+            line_raweeg.set_ydata(self.__raw_eeg_data.get())
+            line_raweeg.set_xdata(np.arange(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length(), 1))
+
+            # esense at
+            #ax_3.set_xlim(int(self.__attention.length()/25)*25, int(self.__attention.length()/25)*25+25)
+            ax_3.set_xlim(self.__attention.length()-len(self.__attention.get()), self.__attention.length())
+            ax_3.set_title('eSense Attention')
+            line_atesense.set_ydata(self.__attention.get())
+            line_atesense.set_xdata(np.arange(self.__attention.length()-len(self.__attention.get()), self.__attention.length(), 1))
+            ax_3.yaxis.tick_right()
+
+            # esense med
+            #ax_5.set_xlim(int(self.__meditation.length()/25)*25, int(self.__meditation.length()/25)*25+25)
+            ax_5.set_xlim(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length())
+            ax_5.set_title('eSense Meditation')
+            line_medesense.set_ydata(self.__meditation.get())
+            line_medesense.set_xdata(np.arange(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length(), 1))
+            ax_5.yaxis.tick_right()
+
+            # blink
+            ax_7.cla()
+            ax_7.set_ylim(0,3)
+            ax_7.set_xlim(0,3)
+            ax_7.axes.xaxis.set_visible(False)
+            ax_7.axes.yaxis.set_visible(False)
+            ax_7.set_title('Blink Detection')
+            if self.__blink != 0:
+                circle = Circle((1.5,1.5), self.__blink/100, color='red')
+                ax_7.add_patch(circle)
+                self.__blink = 0
+
+            # eeg power
+            ax_2.cla()
+            ax_2.bar(*zip(*self.__eeg_power.items()), color='black')
+            ax_2.tick_params(rotation=45)
+
+            # esense attention bar
+            ax_4.cla()
+            if len(self.__attention.get()) > 0:
+                ax_4.bar(*zip(*{'Attention': self.__attention.get()[-1]}.items()), color='red', width=0.2)
+                ax_4.set_ylim(0,100)
+                ax_4.axes.xaxis.set_visible(False)
+                ax_4.tick_params(labelsize=5)
+                
+            # esense meditation bar
+            ax_6.cla()
+            if len(self.__meditation.get()) > 0:
+                ax_6.bar(*zip(*{'Meditation': self.__meditation.get()[-1]}.items()), color='blue', width=0.2)
+                ax_6.set_ylim(0,100)
+                ax_6.axes.xaxis.set_visible(False)
+                ax_6.tick_params(labelsize=5)
+
+            # attention value
+            ax_8.cla()
+            ax_8.axes.xaxis.set_visible(False)
+            ax_8.axes.yaxis.set_visible(False)
+            ax_8.spines['top'].set_visible(False)
+            ax_8.spines['right'].set_visible(False)
+            ax_8.spines['bottom'].set_visible(False)
+            ax_8.spines['left'].set_visible(False)
+            ax_8.text(0, 0, 'Attention', color='red', size=6)
+            try: curr_at = self.__attention.get()[-1]
+            except Exception: curr_at = 0
+            ax_8.text(0, 10, curr_at, color='red', size=30)
+            ax_8.set_ylim(0,50)
+            ax_8.set_xlim(0,20)
+
+            # meditation value
+            ax_9.cla()
+            ax_9.axes.xaxis.set_visible(False)
+            ax_9.axes.yaxis.set_visible(False)
+            ax_9.spines['top'].set_visible(False)
+            ax_9.spines['right'].set_visible(False)
+            ax_9.spines['bottom'].set_visible(False)
+            ax_9.spines['left'].set_visible(False)
+            ax_9.text(0, 0, 'Meditation', color='blue', size=6)
+            try: curr_med = self.__meditation.get()[-1]
+            except Exception: curr_med = 0
+            ax_9.text(0, 10, curr_med, color='blue', size=30)
+            ax_9.set_ylim(0,50)
+            ax_9.set_xlim(0,20)
+        
         def handle_close():
             self.__keep_reading = False
             window.destroy()
@@ -245,11 +244,15 @@ class App():
         animation = FuncAnimation(fig, func=animate, interval=100)
         #plt.tight_layout()
         #window.protocol('WN_DELETE_WINDOW', handle_close)
-        Button(window, text='Close', command=handle_close).pack(side='bottom', anchor='center', pady=10)
+
+        record = PhotoImage(file = r"./imgs/record.png")
+        record = record.subsample(20)
+        Button(window, text='Record', image=record, command=self.command).pack(side='left', pady=10, padx=10)
+        Button(window, text='Close', command=handle_close).pack(side='right', pady=10, padx=10)
         
         window.mainloop()
 
-    def select_path(self) -> None:
+    def select_export_path(self) -> None:
         new_path = askdirectory()
         if new_path == '': return
 
@@ -270,7 +273,7 @@ class App():
         window.grab_set()
         window.resizable(False, False)
 
-        Button(window, text='Change export directory', command=self.select_path).pack(anchor='e', side='bottom', pady=10)
+        Button(window, text='Change export directory', command=self.select_export_path).pack(anchor='e', side='bottom', pady=10)
         Label(window, text='Current export directory:').pack(anchor='w', side='top', pady=10)
         self.pathfield = Text(window)
         self.pathfield.pack(side='top', anchor='center', expand=True, fill='x')
@@ -381,12 +384,34 @@ class App():
         tabcontrol = Notebook(self.mainframe)
         tab1 = Frame(tabcontrol, padx=10, pady=10)
         tab2 = Frame(tabcontrol, padx=10, pady=10)
-        tabcontrol.add(tab1, text='Register new session')
-        tabcontrol.add(tab2, text='Monitor only')
+        tabcontrol.add(tab1, text='Monitor only')
+        tabcontrol.add(tab2, text='Register new session')
         tabcontrol.pack(expand=True, fill='both')
+
+        tabcontrol.tab(1, state='disabled')
         
-        ### tab1: frame form
-        frameform = LabelFrame(tab1, text='Session metadata', padx=10, pady=10)
+        ### tab1: monitor only
+        monitorframe = LabelFrame(tab1, text='Monitoring information', padx=10, pady=10)
+        monitorframe.pack(fill='x', side='top')
+        Label(monitorframe, text='RawEeg').pack(side='top', anchor='w')
+        Label(monitorframe, text='Eyes blink detection').pack(side='top', anchor='w')
+        Label(monitorframe, text='eSense Meditation').pack(side='top', anchor='w')
+        Label(monitorframe, text='eSense Attetion').pack(side='top', anchor='w')
+        Label(monitorframe, text='EegPower').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- delta').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- theta').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- lowAlpha').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- highAlpha').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- lowBeta').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- highBeta').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- lowGamma').pack(side='top', anchor='w')
+        Label(monitorframe, text='\t- highGamma').pack(side='top', anchor='w')
+        
+        Button(tab1, text='Start monitoring', command=self.monitor_logger_window).pack(side='top', anchor='w', pady=10)
+
+        ### tab2: frame form
+        ###### this approach/tab (tab2) is temporarily unavailable
+        frameform = LabelFrame(tab2, text='Session metadata', padx=10, pady=10)
         frameform.pack(fill='x', side='top', anchor='n')
         frameform.columnconfigure(index=1, weight=1)
 
@@ -408,25 +433,6 @@ class App():
         Label(frameform, wraplength=320, text=self.exportpath).grid(row=5, column=1, columnspan=3, sticky='w', pady=5)
 
         Button(frameform, text='Start new session', command=self.registersession).grid(row=6, column=2)
-
-        ### tab2: monitor only
-        monitorframe = LabelFrame(tab2, text='Monitoring information', padx=10, pady=10)
-        monitorframe.pack(fill='x', side='top')
-        Label(monitorframe, text='RawEeg').pack(side='top', anchor='w')
-        Label(monitorframe, text='Eyes blink detection').pack(side='top', anchor='w')
-        Label(monitorframe, text='eSense Meditation').pack(side='top', anchor='w')
-        Label(monitorframe, text='eSense Attetion').pack(side='top', anchor='w')
-        Label(monitorframe, text='EegPower').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- delta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- theta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- lowAlpha').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- highAlpha').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- lowBeta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- highBeta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- lowGamma').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- highGamma').pack(side='top', anchor='w')
-        
-        Button(tab2, text='Start monitoring', command=self.monitoring_window).pack(side='top', anchor='w', pady=10)
 
         self.root.mainloop()
 
