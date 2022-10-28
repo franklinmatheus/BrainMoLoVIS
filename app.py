@@ -13,8 +13,8 @@ from datetime import datetime
 import os
 import socket
 from threading import Thread
-import time
-from tkinter import Button, Entry, Frame, IntVar, Label, LabelFrame, Menu, PhotoImage, Radiobutton, Text, Tk, Toplevel, font, messagebox
+from time import strftime
+from tkinter import Button, Entry, Frame, IntVar, Label, LabelFrame, Menu, PhotoImage, Radiobutton, StringVar, Text, Tk, Toplevel, font, messagebox
 from tkinter.filedialog import askdirectory
 from tkcalendar import DateEntry
 from tkinter.ttk import Notebook, Style
@@ -23,8 +23,8 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
-from common import CONNECTED, DISCONNECTED, GREEN, LIGHT_GREY, RED,  LIGHT_GREY, GREY
-from safelist import SafeList
+from utils.common import CONNECTED, DISCONNECTED, GREEN, LIGHT_GREY, RED, LIGHT_GREY, GREY
+from utils.safelist import SafeList
 
 class App():
 
@@ -44,8 +44,9 @@ class App():
                 print(skt.recv(2048).decode('utf-8'))
             except UnicodeDecodeError:
                 messagebox.showinfo('Something went wrong!', 'Please, restart the monitoring process!')
+                self.quit()
 
-            while self.__keep_reading:
+            while self.__read_mindwave_data:
                 data = skt.recv(2048)
                 if not data: 
                     print('no data')
@@ -95,28 +96,65 @@ class App():
 
                             try: self.__eeg_power['highGamma'] = int(temp.split('highGamma":')[1].split('}')[0])
                             except ValueError: self.__eeg_power['highGamma'] = 0
+                        
+                        if 'poorSignalLevel' in temp:
+                            try: self.__signal = int(temp.split('poorSignalLevel":')[1].split('}')[0].split(',')[0])
+                            except ValueError: self.__signal = 0
+                            self.headset_quality_signal()
 
+    def start_pause_monitoring(self) -> None:
+        if self.__read_mindwave_data == True:
+            self.__read_mindwave_data = False
+            self.__start_pause_button.config(text='Start', image=self.START)
+            self.__recordbutton.config(state='disabled')
+            self.__resetbutton.config(state='active')
+            self.__subid_entry.configure(state='normal')
+        else:
+            self.__read_mindwave_data = True
+            self.__start_pause_button.config(text='Pause', image=self.PAUSE)
+            self.__recordbutton.config(state='active')
+            self.__resetbutton.config(state='disabled')
+            self.__subid_entry.configure(state='readonly')
+            
+            self.__thread = Thread(target=self.receive_socket_mindwave_data)
+            self.__thread.daemon = True
+            self.__thread.start()
+
+    def initValues(self) -> None:
+        self.__raw_eeg_data = SafeList(100)
+        self.__attention = SafeList(25)
+        self.__meditation = SafeList(25)
+        self.__blink = 0
+        self.__eeg_power = {'delta': 0, 'theta': 0, 'lowAlpha': 0, 'highAlpha': 0, 'lowBeta': 0, 'highBeta': 0, 'lowGamma': 0, 'highGamma': 0}
+
+    def reset_monitoring_data(self) -> None:
+        if self.__read_mindwave_data == False:
+            self.initValues()
+    
+    def clock_time(self) -> None:
+        string = strftime('%H:%M:%S')
+        self.__clock.config(text=string)
+        self.__clock.after(1000, self.clock_time)
+
+    def headset_quality_signal(self) -> None:
+        if self.__signal < 50: self.__signallabel.config(image=self.CONN4)
+        elif self.__signal < 100: self.__signallabel.config(image=self.CONN3)
+        elif self.__signal < 150: self.__signallabel.config(image=self.CONN2)
+        elif self.__signal < 200: self.__signallabel.config(image=self.CONN1)
+        else: self.__signallabel.config(image=self.CONN0)
+        
     def monitor_logger_window(self) -> None:
-        window = Toplevel(padx=10)
+        window = Toplevel(padx=5)
         window.title('Brain Monitor')
         window.iconbitmap('./icon/favicon.ico')
         window.attributes('-fullscreen',True)
         window.grab_set()
 
-        self.__raw_eeg_data = SafeList(100)
-        self.__attention = SafeList(25)
-        self.__meditation = SafeList(25)
-        self.__eeg_power = {'delta': 0, 'theta': 0, 'lowAlpha': 0, 'highAlpha': 0, 'lowBeta': 0, 'highBeta': 0, 'lowGamma': 0, 'highGamma': 0}
+        self.initValues()
         #power_sequence = ['delta', 'theta', 'lowAlpha', 'highAlpha', 'lowBeta', 'highBeta', 'lowGamma', 'highGamma']
-        self.__blink = 0
-        self.__keep_reading = True
 
-        thread = Thread(target=self.receive_socket_mindwave_data)
-        thread.daemon = True
-        thread.start()
-
-        fig = Figure(tight_layout=True)
-        #fig.subplots_adjust(bottom=0.1, top=0.9, left=0.05, right=0.95, hspace=1.2, wspace=1)
+        fig = Figure()
+        fig.subplots_adjust(bottom=0.1, top=0.9, left=0.05, right=0.95, hspace=2, wspace=1.5)
 
         grid = fig.add_gridspec(7, 18)
         ax_1 = fig.add_subplot(grid[0:3,0:8]) # raw
@@ -132,43 +170,47 @@ class App():
         ax_10 = fig.add_subplot(grid[0:3,-4:]) # custom attention
         ax_11 = fig.add_subplot(grid[3:6,-4:]) # custom meditation
         
-        ax_1.set_ylim(0,100)
-        ax_1.set_xlim(0,100)
-        line_raweeg, = ax_1.plot(0, 0, lw=1, color='black')
-
-        ax_3.set_ylim(0,100)
-        ax_3.set_xlim(0,20)
-        line_atesense, = ax_3.plot(0, 0, lw=2, color='red', label='Attention')
-
-        ax_5.set_ylim(0,100)
-        ax_5.set_xlim(0,20)
-        line_medesense, = ax_5.plot(0, 0, lw=2, color='blue', label='Meditation')
+        #fig.add_subplot(grid[0,12:14]).set_title('Attention', color='red')
         
         def animate(i):
             if len(self.__raw_eeg_data.get()) > 0:
+                ax_1.cla()
                 ax_1.set_ylim(min(self.__raw_eeg_data.get()), max(self.__raw_eeg_data.get()))
-            #ax_1.set_xlim(int(self.__raw_eeg_data.length()/100)*100, int(self.__raw_eeg_data.length()/100)*100+100)
-            ax_1.set_xlim(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length())
-            
-            ax_1.set_title('Raw EEG')
-            line_raweeg.set_ydata(self.__raw_eeg_data.get())
-            line_raweeg.set_xdata(np.arange(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length(), 1))
+                #ax_1.set_xlim(int(self.__raw_eeg_data.length()/100)*100, int(self.__raw_eeg_data.length()/100)*100+100)
+                ax_1.set_xlim(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length())
+                
+                ax_1.set_title('Raw EEG')
+                #line_raweeg.set_ydata(self.__raw_eeg_data.get())
+                #line_raweeg.set_xdata(np.arange(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length(), 1))
+                ax_1.plot(np.arange(self.__raw_eeg_data.length()-len(self.__raw_eeg_data.get()), self.__raw_eeg_data.length(), 1), 
+                        self.__raw_eeg_data.get(), lw=1, color='black')
+                ax_1.axhline(np.mean(self.__raw_eeg_data.get()))
 
             # esense at
-            #ax_3.set_xlim(int(self.__attention.length()/25)*25, int(self.__attention.length()/25)*25+25)
-            ax_3.set_xlim(self.__attention.length()-len(self.__attention.get()), self.__attention.length())
-            ax_3.set_title('eSense Attention')
-            line_atesense.set_ydata(self.__attention.get())
-            line_atesense.set_xdata(np.arange(self.__attention.length()-len(self.__attention.get()), self.__attention.length(), 1))
-            ax_3.yaxis.tick_right()
+            if len(self.__attention.get()) > 0:
+                ax_3.cla()
+                #ax_3.set_xlim(int(self.__attention.length()/25)*25, int(self.__attention.length()/25)*25+25)
+                ax_3.set_xlim(self.__attention.length()-len(self.__attention.get()), self.__attention.length())
+                ax_3.set_title('eSense Attention')
+                #line_atesense.set_ydata(self.__attention.get())
+                #line_atesense.set_xdata(np.arange(self.__attention.length()-len(self.__attention.get()), self.__attention.length(), 1))
+                ax_3.plot(np.arange(self.__attention.length()-len(self.__attention.get()), self.__attention.length(), 1), 
+                        self.__attention.get(), lw=2, color='red', label='Attention')
+                ax_3.yaxis.tick_right()
+                ax_3.axhline(np.mean(self.__attention.get()))
 
             # esense med
-            #ax_5.set_xlim(int(self.__meditation.length()/25)*25, int(self.__meditation.length()/25)*25+25)
-            ax_5.set_xlim(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length())
-            ax_5.set_title('eSense Meditation')
-            line_medesense.set_ydata(self.__meditation.get())
-            line_medesense.set_xdata(np.arange(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length(), 1))
-            ax_5.yaxis.tick_right()
+            if len(self.__meditation.get()) > 0:
+                ax_5.cla()
+                #ax_5.set_xlim(int(self.__meditation.length()/25)*25, int(self.__meditation.length()/25)*25+25)
+                ax_5.set_xlim(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length())
+                ax_5.set_title('eSense Meditation')
+                #line_medesense.set_ydata(self.__meditation.get())
+                #line_medesense.set_xdata(np.arange(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length(), 1))
+                ax_5.plot(np.arange(self.__meditation.length()-len(self.__meditation.get()), self.__meditation.length(), 1), 
+                        self.__meditation.get(), lw=2, color='blue', label='Meditation')
+                ax_5.yaxis.tick_right()
+                ax_5.axhline(np.mean(self.__meditation.get()))
 
             # blink
             ax_7.cla()
@@ -184,16 +226,19 @@ class App():
 
             # eeg power
             ax_2.cla()
+            ax_2.set_title('EEG Power')
             ax_2.bar(*zip(*self.__eeg_power.items()), color='black')
             ax_2.tick_params(rotation=45)
+            ax_2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
 
             # esense attention bar
             ax_4.cla()
             if len(self.__attention.get()) > 0:
-                ax_4.bar(*zip(*{'Attention': self.__attention.get()[-1]}.items()), color='red', width=0.2)
+                ax_4.bar(*zip(*{'Attention': self.__attention.get()[-1]}.items()), color='red', width=0.1)
                 ax_4.set_ylim(0,100)
                 ax_4.axes.xaxis.set_visible(False)
                 ax_4.tick_params(labelsize=5)
+                ax_4.set_yticks([0,25,50,75,100])
                 
             # esense meditation bar
             ax_6.cla()
@@ -202,6 +247,7 @@ class App():
                 ax_6.set_ylim(0,100)
                 ax_6.axes.xaxis.set_visible(False)
                 ax_6.tick_params(labelsize=5)
+                ax_6.set_yticks([0,25,50,75,100])
 
             # attention value
             ax_8.cla()
@@ -211,10 +257,10 @@ class App():
             ax_8.spines['right'].set_visible(False)
             ax_8.spines['bottom'].set_visible(False)
             ax_8.spines['left'].set_visible(False)
-            ax_8.text(0, 0, 'Attention', color='red', size=6)
+            #ax_8.text(0, 0, 'Attention', color='red', size=6)
             try: curr_at = self.__attention.get()[-1]
             except Exception: curr_at = 0
-            ax_8.text(0, 10, curr_at, color='red', size=30)
+            ax_8.text(0, 0, curr_at, color='red', size=24)
             ax_8.set_ylim(0,50)
             ax_8.set_xlim(0,20)
 
@@ -226,30 +272,60 @@ class App():
             ax_9.spines['right'].set_visible(False)
             ax_9.spines['bottom'].set_visible(False)
             ax_9.spines['left'].set_visible(False)
-            ax_9.text(0, 0, 'Meditation', color='blue', size=6)
+            #ax_9.text(0, 0, 'Meditation', color='blue', size=6)
             try: curr_med = self.__meditation.get()[-1]
             except Exception: curr_med = 0
-            ax_9.text(0, 10, curr_med, color='blue', size=30)
+            ax_9.text(0, 0, curr_med, color='blue', size=24)
             ax_9.set_ylim(0,50)
             ax_9.set_xlim(0,20)
         
         def handle_close():
-            self.__keep_reading = False
+            self.__read_mindwave_data = False
             window.destroy()
 
         canvas = FigureCanvasTkAgg(fig, master=window)
         canvas.draw()
-        canvas.get_tk_widget().pack(expand=True, fill='both')
+        canvas.get_tk_widget().pack(expand=True, fill='both', padx=5)
 
         animation = FuncAnimation(fig, func=animate, interval=100)
         #plt.tight_layout()
         #window.protocol('WN_DELETE_WINDOW', handle_close)
 
-        record = PhotoImage(file = r"./imgs/record.png")
-        record = record.subsample(20)
-        Button(window, text='Record', image=record, command=self.command).pack(side='left', pady=10, padx=10)
-        Button(window, text='Close', command=handle_close).pack(side='right', pady=10, padx=10)
+        self.RECORD = PhotoImage(file = r"./imgs/record.png")
+        self.STOP = PhotoImage(file = r"./imgs/stop.png")
+        self.CONN0 = PhotoImage(file = r"./imgs/conn0.png")
+        self.CONN1 = PhotoImage(file = r"./imgs/conn1.png")
+        self.CONN2 = PhotoImage(file = r"./imgs/conn2.png")
+        self.CONN3 = PhotoImage(file = r"./imgs/conn3.png")
+        self.CONN4 = PhotoImage(file = r"./imgs/conn4.png")
+        self.START = PhotoImage(file = r"./imgs/start.png")
+        self.PAUSE = PhotoImage(file = r"./imgs/pause.png")
+
+        Label(window, text='Subject ID').pack(side='left', pady=10, padx=5)
+        self.__subid_str = StringVar(window)
+        self.__subid_entry = Entry(window, textvariable=self.__subid_str, border=5)
+        self.__subid_entry.pack(side='left', pady=10, padx=5)
+
+        self.__read_mindwave_data = False
+        self.__start_pause_button = Button(window, text='Start', image=self.START, compound='right', command=self.start_pause_monitoring)
+        self.__start_pause_button.pack(side='left', pady=10, padx=5)
+
+        self.__record_mindwave_data = False
+        self.__recordbutton = Button(window, text='Record', image=self.RECORD, compound='right', command=self.command, state='disabled')
+        self.__recordbutton.pack(side='left', pady=10, padx=5)
+
+        self.__resetbutton = Button(window, text='Reset', command=self.reset_monitoring_data, state='disabled')
+        self.__resetbutton.pack(side='left', pady=10, padx=5)
         
+        Button(window, text='Close', command=handle_close).pack(side='right', pady=10, padx=5)
+        
+        self.__clock = Label(window)
+        self.__clock.pack(side='right', pady=10, padx=5)
+        self.clock_time()
+
+        self.__signallabel = Label(window, image=self.CONN0)
+        self.__signallabel.pack(side='right', pady=10, padx=5)
+
         window.mainloop()
 
     def select_export_path(self) -> None:
