@@ -273,8 +273,10 @@ class App():
             ax_9.spines['bottom'].set_visible(False)
             ax_9.spines['left'].set_visible(False)
             #ax_9.text(0, 0, 'Meditation', color='blue', size=6)
+            
             try: curr_med = self.__meditation.get()[-1]
             except Exception: curr_med = 0
+            
             ax_9.text(0, 0, curr_med, color='blue', size=24)
             ax_9.set_ylim(0,50)
             ax_9.set_xlim(0,20)
