@@ -13,6 +13,7 @@ from idlelib.tooltip import Hovertip
 from brainmolovis.apputils.common import LIGHT_GREY, LIGHT_GREY
 from brainmolovis.apputils.safelist import SafeList
 from brainmolovis.appconfig.subject import InputSubjectWindow
+from brainmolovis.appconfig.config import get_export_path, get_logger_filename
 
 class MonitoringWindow(Toplevel):
 
@@ -180,7 +181,14 @@ class MonitoringWindow(Toplevel):
             self.__recordbutton.config(image=self.RECORD)
             self.__start_pause_button.config(state='active')
         else:
-            self.__export_file = self.__export_path + '\\' + self.__subjectid + '_' + strftime('%m-%d-%Y_%Hh%Mmin%Sseg') + '.tab'
+            filename_tokens = []
+            for key, value in get_logger_filename().items():
+                if value != -1:
+                    if key == 'subject': filename_tokens.append(self.__subjectid)
+                    elif key == 'date': filename_tokens.append(strftime('%m-%d-%Y'))
+                    elif key == 'time': filename_tokens.append(strftime('%Hh%Mmin%Sseg'))
+            self.__export_file = self.__export_path + '\\' + '_'.join(filename_tokens) + '.csv'
+
             with open(self.__export_file, 'w') as file:
                 header = 'rawEeg' + '\t'
                 header += 'eSenseAT' + '\t'
@@ -254,7 +262,7 @@ class MonitoringWindow(Toplevel):
 
     def confirm_reset(self):
         #if self.__raw_eeg_data.length() > 0:
-            #messagebox.showinfo('Important', 'The monitoring window has been reset.', parent=self)
+        messagebox.showinfo('Important', 'The monitoring window has been reset.', parent=self)
         self.reset_monitoring_data()
     
     def clock_time(self) -> None:
@@ -281,7 +289,7 @@ class MonitoringWindow(Toplevel):
     def quit(self) -> None:
         self.destroy()
 
-    def __init__(self, parent, exportpath) -> None:
+    def __init__(self, parent) -> None:
         #self = Toplevel()
         super().__init__(parent)
 
@@ -290,7 +298,8 @@ class MonitoringWindow(Toplevel):
         self.attributes('-fullscreen',True)
         #self.grab_set()
         
-        self.__export_path = exportpath
+        self.__export_path = get_export_path()
+        print(self.__export_path)
         self.__read_mindwave_data = False
         self.__record_mindwave_data = False
         self.__show_average = IntVar()

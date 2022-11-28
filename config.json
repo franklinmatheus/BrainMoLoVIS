@@ -1,0 +1,24 @@
+{
+    "export_path": "C:/Users/frank/Documents/UFRN/PPGSC/Semestres/3/TOPICOS/mindwave/BrainMoLoVIS/data",
+    "logger_file": {
+        "filename": {
+            "subject": 0,
+            "date": -1,
+            "time": 1
+        },
+        "sep": ";",
+        "content": {
+            "rawEeg": 0,
+            "eSenseAT": 1,
+            "eSenseMED": 2,
+            "delta": 3,
+            "theta": 4,
+            "lowAlpha": 5,
+            "highAlpha": 6,
+            "lowBeta": 7,
+            "highBeta": 8,
+            "lowGamma": 9,
+            "highGamma": 10
+        }
+    }
+}

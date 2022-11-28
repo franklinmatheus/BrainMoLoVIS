@@ -6,23 +6,25 @@ from tkinter.ttk import Notebook, Style
 
 from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY
 from brainmolovis.appmonitor.monitor import MonitoringWindow
-from brainmolovis.appconfig.export import ConfigExportPathWindow
+from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow
+from brainmolovis.appconfig.config import load_config
 
 class App(Tk):
         
     def monitoring_window(self) -> None:
-        self.monitoringwindow = MonitoringWindow(self, self.exportpath)
+        self.monitoringwindow = MonitoringWindow(self)
         self.monitoringwindow.grab_set()
 
-    def set_exportpath(self, newpath):
-        self.exportpath = newpath
-
-    def get_exportpath(self):
-        return self.exportpath
-
-    def export_data_window(self) -> None:
+    def logger_export_window(self) -> None:
         self.configexportpathwindow = ConfigExportPathWindow(self)
         self.configexportpathwindow.grab_set()
+
+    def logger_filename_format(self) -> None:
+        self.loggerfilenamewindow = ConfigLoggerFilenameWindow(self)
+        self.loggerfilenamewindow.grab_set()
+
+    def logger_data_file_format(self) -> None:
+        pass
     
     def registersession(self) -> None:
         if self.label_headset_status['text'] == DISCONNECTED:
@@ -62,11 +64,10 @@ class App(Tk):
 
     def __init__(self) -> None:
         # build GUI
-        #self = Tk()
         super().__init__()
 
         self.title('[NeuroSky MindWave] Brain Monitor and Logger')
-        #self.iconbitmap('./icon/favicon.ico')
+        self.iconbitmap('./icon/favicon.ico')
         self.geometry('720x480')
         self.resizable(False, False)
 
@@ -81,18 +82,20 @@ class App(Tk):
         self.usergenre = IntVar()
         self.experience = IntVar()
         self.sessiondate = None
-        self.exportpath = os.getcwd()
 
         # menu
         menu = Menu(self)
         filemenu = Menu(menu, tearoff=0)
-        filemenu.add_command(label='Record history', command=self.command)
-        filemenu.add_separator()
+        #filemenu.add_command(label='Record history', command=self.command)
+        #filemenu.add_separator()
         filemenu.add_command(label='Exit', command=self.quit)
         menu.add_cascade(label='File', menu=filemenu)
 
         options = Menu(menu, tearoff=0)
-        options.add_command(label='Export data options', command=self.export_data_window)
+        options.add_command(label='Logger export directory', command=self.logger_export_window)
+        options.add_command(label='Logger filename format', command=self.logger_filename_format)
+        options.add_command(label='Logger data file format', command=self.logger_data_file_format)
+
         menu.add_cascade(label='Options', menu=options)
 
         help = Menu(menu, tearoff=0)
@@ -127,7 +130,7 @@ class App(Tk):
         tabcontrol = Notebook(self.mainframe)
         tab1 = Frame(tabcontrol, padx=10, pady=10)
         tab2 = Frame(tabcontrol, padx=10, pady=10)
-        tabcontrol.add(tab1, text='Monitor only')
+        tabcontrol.add(tab1, text='Monitoring')
         tabcontrol.add(tab2, text='Data visualization')
         tabcontrol.pack(expand=True, fill='both')
 
@@ -178,6 +181,8 @@ class App(Tk):
         #Button(frameform, text='Start new session', command=self.registersession).grid(row=6, column=2)
 
         #self.mainloop()
+
+        load_config()
 
 if __name__ == '__main__':
     app = App()
