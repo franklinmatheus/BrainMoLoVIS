@@ -6,7 +6,7 @@ from tkinter.ttk import Notebook, Style
 
 from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY
 from brainmolovis.appmonitor.monitor import MonitoringWindow
-from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow
+from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
 from brainmolovis.appconfig.config import load_config
 
 class App(Tk):
@@ -24,7 +24,8 @@ class App(Tk):
         self.loggerfilenamewindow.grab_set()
 
     def logger_data_file_format(self) -> None:
-        pass
+        self.loggerfilecontentwindow = ConfigLoggerFileContentWindow(self)
+        self.loggerfilecontentwindow.grab_set()
     
     def registersession(self) -> None:
         if self.label_headset_status['text'] == DISCONNECTED:

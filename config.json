@@ -8,17 +8,17 @@
         },
         "sep": ";",
         "content": {
-            "rawEeg": 0,
-            "eSenseAT": 1,
-            "eSenseMED": 2,
-            "delta": 3,
-            "theta": 4,
-            "lowAlpha": 5,
-            "highAlpha": 6,
-            "lowBeta": 7,
-            "highBeta": 8,
-            "lowGamma": 9,
-            "highGamma": 10
+            "raweeg": 1,
+            "esenseat": 2,
+            "esensemed": 3,
+            "delta": 4,
+            "theta": 5,
+            "lowalpha": -1,
+            "highalpha": -1,
+            "lowbeta": 6,
+            "highbeta": -1,
+            "lowgamma": -1,
+            "highgamma": 0
         }
     }
 }

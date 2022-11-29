@@ -12,17 +12,17 @@ default_config = {
         },
         'sep':';',
         'content': {
-            'rawEeg':0,
-            'eSenseAT':1,
-            'eSenseMED':2,
+            'raweeg':0,
+            'esenseat':1,
+            'esensemed':2,
             'delta':3,
             'theta':4,
-            'lowAlpha':5,
-            'highAlpha':6,
-            'lowBeta':7,
-            'highBeta':8,
-            'lowGamma':9,
-            'highGamma':10,
+            'lowalpha':5,
+            'highalpha':6,
+            'lowbeta':7,
+            'highbeta':8,
+            'lowgamma':9,
+            'highgamma':10,
         },
     },
 }
@@ -67,4 +67,14 @@ def get_logger_filename() -> dict:
 def set_logger_filename(format: dict) -> None:
     temp = load_config()
     temp['logger_file']['filename'] = format
+    save_config(temp)
+
+def get_logger_file_content() -> tuple[dict, str]:
+    temp = load_config()
+    return temp['logger_file']['content'], temp['logger_file']['sep']
+
+def set_logger_file_content(format: dict, sep: str) -> None:
+    temp = load_config()
+    temp['logger_file']['content'] = format
+    temp['logger_file']['sep'] = sep
     save_config(temp)
