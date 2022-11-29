@@ -8,17 +8,17 @@
         },
         "sep": ";",
         "content": {
-            "raweeg": 1,
-            "esenseat": 2,
-            "esensemed": 3,
-            "delta": 4,
-            "theta": 5,
-            "lowalpha": -1,
-            "highalpha": -1,
-            "lowbeta": 6,
-            "highbeta": -1,
-            "lowgamma": -1,
-            "highgamma": 0
+            "raweeg": 0,
+            "esenseat": 1,
+            "esensemed": 2,
+            "delta": 3,
+            "theta": 4,
+            "lowalpha": 7,
+            "highalpha": 8,
+            "lowbeta": 5,
+            "highbeta": 6,
+            "lowgamma": 9,
+            "highgamma": 10
         }
     }
 }
