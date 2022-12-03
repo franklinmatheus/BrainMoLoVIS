@@ -84,3 +84,7 @@ def get_logger_file_content_reduced() -> tuple[list, dict, str]:
     seq = [value[0] for value in sorted(dict(temp['logger_file']['content']).items(), key=lambda item: item[1]) if value[1] != -1]
     reduced = {key: value for key, value in dict(temp['logger_file']['content']).items() if key in seq}
     return seq, reduced, temp['logger_file']['sep']
+
+def get_logger_file_sep() -> str:
+    temp = load_config()
+    return temp['logger_file']['sep']

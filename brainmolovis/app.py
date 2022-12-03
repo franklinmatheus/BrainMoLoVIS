@@ -1,12 +1,14 @@
 from datetime import datetime
 import os
 import socket
-from tkinter import Button, Frame, IntVar, Label, LabelFrame, Menu, Tk, font, messagebox
+from tkinter import Button, Frame, IntVar, Label, LabelFrame, Menu, Tk, font, messagebox, Text
 from tkinter.ttk import Notebook, Style
+from tkinter.filedialog import askopenfilename
 
 from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY
 from brainmolovis.appmonitor.monitor import MonitoringWindow
 from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
+from brainmolovis.appviewer.datavis import VisualizationWindow
 from brainmolovis.appconfig.config import load_config
 
 class App(Tk):
@@ -14,6 +16,13 @@ class App(Tk):
     def monitoring_window(self) -> None:
         self.monitoringwindow = MonitoringWindow(self)
         self.monitoringwindow.grab_set()
+
+    def visualization_window(self) -> None:
+        if self.datafilename != '':
+            self.visualizationwindow = VisualizationWindow(self, self.datafilename)
+            self.visualizationwindow.grab_set()
+        else:
+            messagebox.showinfo('Error', 'Please, inform a valid file!')
 
     def logger_export_window(self) -> None:
         self.configexportpathwindow = ConfigExportPathWindow(self)
@@ -27,6 +36,13 @@ class App(Tk):
         self.loggerfilecontentwindow = ConfigLoggerFileContentWindow(self)
         self.loggerfilecontentwindow.grab_set()
     
+    def select_data_file(self) -> None:
+        self.datafilename = askopenfilename()
+        self.datafilevis.configure(state='normal')
+        self.datafilevis.delete(1.0, 'end')
+        self.datafilevis.insert('end', self.datafilename)
+        self.datafilevis.configure(state='disabled')
+
     def registersession(self) -> None:
         if self.label_headset_status['text'] == DISCONNECTED:
             messagebox.showinfo('Headset disconnected', 'Please, check your headset connection!')
@@ -83,12 +99,11 @@ class App(Tk):
         self.usergenre = IntVar()
         self.experience = IntVar()
         self.sessiondate = None
+        self.datafilename = ''
 
         # menu
         menu = Menu(self)
         filemenu = Menu(menu, tearoff=0)
-        #filemenu.add_command(label='Record history', command=self.command)
-        #filemenu.add_separator()
         filemenu.add_command(label='Exit', command=self.quit)
         menu.add_cascade(label='File', menu=filemenu)
 
@@ -134,8 +149,6 @@ class App(Tk):
         tabcontrol.add(tab1, text='Monitoring')
         tabcontrol.add(tab2, text='Data visualization')
         tabcontrol.pack(expand=True, fill='both')
-
-        #tabcontrol.tab(1, state='disabled')
         
         ### tab1: monitor only
         monitorframe = LabelFrame(tab1, text='Monitoring information', padx=10, pady=10)
@@ -156,32 +169,17 @@ class App(Tk):
         
         Button(tab1, text='Start monitoring', command=self.monitoring_window).pack(side='top', anchor='w', pady=10)
 
-        ### tab2: frame form
-        ###### this approach/tab (tab2) is temporarily unavailable
-        #frameform = LabelFrame(tab2, text='Session metadata', padx=10, pady=10)
-        #frameform.pack(fill='x', side='top', anchor='n')
-        #frameform.columnconfigure(index=1, weight=1)
+        ### tab2: visualization
+        visframe = LabelFrame(tab2, text='Data file', padx=10, pady=10)
+        visframe.pack(fill='x', side='top')
 
-        #Label(frameform, text='User ID').grid(row=0, column=0, padx=10, sticky='e')
-        #Label(frameform, text='User age').grid(row=1, column=0, padx=10, sticky='e')
-        #Label(frameform, text='User genre').grid(row=2, column=0, padx=10, sticky='e')
-        #Label(frameform, text='BCI Experience?').grid(row=3, column=0, padx=10, sticky='e')
-        #Label(frameform, text='Session date').grid(row=4, column=0, padx=10, sticky='e')
-        #Label(frameform, text='Export directory').grid(row=5, column=0, padx=10, sticky='e')
-        
-        #self.userid = Entry(frameform).grid(row=0, column=1, columnspan=3, sticky='news', pady=5)
-        #self.userage = Entry(frameform).grid(row=1, column=1, columnspan=3, sticky='news', pady=5)
-        #Radiobutton(frameform, text="Male", padx=5, variable=self.usergenre, value=1).grid(row=2, column=1, pady=5, sticky='w')
-        #Radiobutton(frameform, text="Famale", padx=5, variable=self.usergenre, value=2).grid(row=2, column=2, pady=5, sticky='w')
-        
-        #Radiobutton(frameform, text="No", padx=5, variable=self.experience, value=1).grid(row=3, column=1, pady=5, sticky='w')
-        #Radiobutton(frameform, text="Yes", padx=5, variable=self.experience, value=2).grid(row=3, column=2, pady=5, sticky='w')
-        #self.sessiondate = DateEntry(frameform, bg=GREEN, fg='white', state='readonly').grid(row=4, column=1, columnspan=3, sticky='news', pady=5)
-        #Label(frameform, wraplength=320, text=self.exportpath).grid(row=5, column=1, columnspan=3, sticky='w', pady=5)
+        Label(visframe, text='Selected data file:').pack(anchor='w', side='top')
+        self.datafilevis = Text(visframe, height=5)
+        self.datafilevis.pack(side='top', anchor='center', expand=True, fill='x', pady=10)
+        self.datafilevis.configure(state='disabled')
+        Button(visframe, text='Choose file', command=self.select_data_file).pack(side='top', anchor='w')
 
-        #Button(frameform, text='Start new session', command=self.registersession).grid(row=6, column=2)
-
-        #self.mainloop()
+        Button(tab2, text='Open visualization module', command=self.visualization_window).pack(side='top', anchor='w', pady=10)
 
         load_config()
 

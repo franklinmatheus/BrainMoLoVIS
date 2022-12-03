@@ -18,7 +18,7 @@ from brainmolovis.appconfig.config import get_export_path, get_logger_filename, 
 from brainmolovis.apputils.mindwavedata import *
 
 class MonitoringWindow(Toplevel):
-
+    # adicionar dados do jeito que chegam numa pilha e botar uma thread paralela para processar e mostrar no monitor
     def receive_socket_mindwave_data(self) -> None:
         host = '127.0.0.1'
         port = 13854
@@ -125,9 +125,6 @@ class MonitoringWindow(Toplevel):
             self.resetbutton.config(state='active')
             self.config_button.config(state='active')
             self.check_show_average.config(state='active')
-            #self.radio_10.config(state='active')
-            #self.radio_30.config(state='active')
-            #self.radio_60.config(state='active')
             self.combo_win_range.config(state='active')
             self.combo_gen_at.config(state='active')
             self.combo_gen_med.config(state='active')
@@ -138,9 +135,6 @@ class MonitoringWindow(Toplevel):
             self.resetbutton.config(state='disabled')
             self.config_button.config(state='disabled')
             self.check_show_average.config(state='disabled')
-            #self.radio_10.config(state='disabled')
-            #self.radio_30.config(state='disabled')
-            #self.radio_60.config(state='disabled')
             self.combo_win_range.config(state='disabled')
             self.combo_gen_at.config(state='disabled')
             self.combo_gen_med.config(state='disabled')
@@ -563,12 +557,6 @@ class MonitoringWindow(Toplevel):
         self.combo_win_range = Combobox(win_range_frame, values=self.win_range_opts, textvariable=self.win_range, state='readonly')
         self.combo_win_range.pack(side='left', padx=5)
         self.win_range.trace('w',self.win_range_opt_selected)
-        #self.radio_10 = Radiobutton(win_range_frame, text='10', variable=self.win_range, value=10, indicator=0, selectcolor=LIGHT_GREY, command=self.confirm_reset)
-        #self.radio_10.pack(side='left')
-        #self.radio_30 = Radiobutton(win_range_frame, text='30', variable=self.win_range, value=30, indicator=0, selectcolor=LIGHT_GREY, command=self.confirm_reset)
-        #self.radio_30.pack(side='left')
-        #self.radio_60 = Radiobutton(win_range_frame, text='60', variable=self.win_range, value=60, indicator=0, selectcolor=LIGHT_GREY, command=self.confirm_reset)
-        #self.radio_60.pack(side='left')
 
         Separator(botframe, orient='vertical').pack(fill='y', side='left')
         win_gen_options = Frame(botframe)
