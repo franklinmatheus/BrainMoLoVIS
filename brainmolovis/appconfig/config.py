@@ -23,6 +23,8 @@ default_config = {
             'highbeta':8,
             'lowgamma':9,
             'highgamma':10,
+            'genat':11,
+            'genmed':12
         },
     },
 }

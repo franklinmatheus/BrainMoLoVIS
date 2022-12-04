@@ -3,8 +3,8 @@
     "logger_file": {
         "filename": {
             "subject": 0,
-            "date": -1,
-            "time": 1
+            "date": 1,
+            "time": 2
         },
         "sep": ";",
         "content": {
@@ -13,12 +13,14 @@
             "esensemed": 2,
             "delta": 3,
             "theta": 4,
-            "lowalpha": 7,
-            "highalpha": 8,
-            "lowbeta": 5,
-            "highbeta": 6,
+            "lowalpha": 5,
+            "highalpha": 6,
+            "lowbeta": 7,
+            "highbeta": 8,
             "lowgamma": 9,
-            "highgamma": 10
+            "highgamma": 10,
+            "genat": 11,
+            "genmed": 12
         }
     }
 }

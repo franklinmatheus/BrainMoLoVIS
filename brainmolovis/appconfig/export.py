@@ -215,7 +215,7 @@ class ConfigLoggerFileContentWindow(Toplevel):
         
         self.title('Logger file content format')
         self.iconbitmap('./icon/favicon.ico')
-        self.geometry('780x420')
+        self.geometry('900x480')
         self.config(padx=10)
         self.resizable(False, False)
         self.parent = parent
@@ -226,11 +226,11 @@ class ConfigLoggerFileContentWindow(Toplevel):
         output = Frame(self)
         Label(output, text='Formato:', font=("Arial", 10)).pack(anchor='w')
         self.contentformat = Text(output, height=5)
-        self.contentformat.pack(expand=True, fill='x')
+        self.contentformat.pack(fill='x')
         self.contentformat.insert('end', 'XYZ')
         self.contentformat.configure(state='disabled')
     
-        output.pack(expand=True, fill='x')
+        output.pack(fill='x')
         
         Button(self, text='Save format', command=self.save_format).pack(anchor='e', pady=10)
 
