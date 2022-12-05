@@ -96,7 +96,7 @@ class MonitoringWindow(Toplevel):
                         self.headset_quality_signal()
 
     def stream_from_file(self) -> None:        
-        with open('streamdata.csv', 'r') as file:
+        with open('streamdata_local.csv', 'r') as file:
             while self.read_mindwave_data:
                 data = file.readline()
                 

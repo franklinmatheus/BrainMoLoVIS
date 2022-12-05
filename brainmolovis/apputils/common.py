@@ -1,7 +1,9 @@
-RED = '#cc0000'
-GREEN = '#009933'
+RED = '#E15A6A'
+GREEN = '#3BA99C'
 GREY = '#919191'
 LIGHT_GREY = '#d9d9d9'
+DARK_GREY = '#3d3d3d'
+BLUE1 = '#484D6D'
 
 DISCONNECTED = 'Disconnected'
 CONNECTED = 'Connected'

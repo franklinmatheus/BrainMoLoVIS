@@ -1,14 +1,14 @@
 from datetime import datetime
-import os
+from os.path import basename
 import socket
-from tkinter import Button, Frame, IntVar, Label, LabelFrame, Menu, Tk, font, messagebox, Text
-from tkinter.ttk import Notebook, Style
-from tkinter.filedialog import askopenfilename
+from tkinter import Button, Frame, IntVar, Label, LabelFrame, Menu, Tk, font, messagebox, PhotoImage
+from tkinter.ttk import Style
+from tkinter.filedialog import askopenfilename, askdirectory
 
-from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY
+from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY, DARK_GREY, BLUE1
 from brainmolovis.appmonitor.monitor import MonitoringWindow
 from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
-from brainmolovis.appviewer.datavis import VisualizationWindow
+from brainmolovis.appviewer.datavis import SingleFileVisualizationWindow, MultipleFilesVisualizationWindow
 from brainmolovis.appconfig.config import load_config
 
 class App(Tk):
@@ -17,12 +17,19 @@ class App(Tk):
         self.monitoringwindow = MonitoringWindow(self)
         self.monitoringwindow.grab_set()
 
-    def visualization_window(self) -> None:
+    def visualization_single_window(self) -> None:
         if self.datafilename != '':
-            self.visualizationwindow = VisualizationWindow(self, self.datafilename)
+            self.visualizationwindow = SingleFileVisualizationWindow(self, self.datafilename)
             self.visualizationwindow.grab_set()
         else:
             messagebox.showinfo('Error', 'Please, inform a valid file!')
+
+    def visualization_multiple_window(self) -> None:
+        if self.foldername != '':
+            self.visualizationwindow = MultipleFilesVisualizationWindow(self, self.foldername)
+            self.visualizationwindow.grab_set()
+        else:
+            messagebox.showinfo('Error', 'Please, inform a valid directory!')
 
     def logger_export_window(self) -> None:
         self.configexportpathwindow = ConfigExportPathWindow(self)
@@ -36,12 +43,13 @@ class App(Tk):
         self.loggerfilecontentwindow = ConfigLoggerFileContentWindow(self)
         self.loggerfilecontentwindow.grab_set()
     
-    def select_data_file(self) -> None:
+    def select_datafile_vis(self) -> None:
         self.datafilename = askopenfilename()
-        self.datafilevis.configure(state='normal')
-        self.datafilevis.delete(1.0, 'end')
-        self.datafilevis.insert('end', self.datafilename)
-        self.datafilevis.configure(state='disabled')
+        self.datafilevis.config(text=basename(self.datafilename))
+
+    def select_folder_vis(self) -> None:
+        self.foldername = askdirectory()
+        self.foldervis.config(text='.../' + basename(self.foldername))
 
     def registersession(self) -> None:
         if self.label_headset_status['text'] == DISCONNECTED:
@@ -58,9 +66,9 @@ class App(Tk):
 
     def changestatusconnection(self, status) -> None:
         self.label_headset_status['text'] = status
-        self.label_last_check['text'] = 'Last check: ' + datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        if status == CONNECTED: self.label_headset_status.config(fg=GREEN)
-        else: self.label_headset_status.config(fg=RED)
+        self.label_last_check['text'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        if status == CONNECTED: self.label_headset_status.config(bg=GREEN)
+        else: self.label_headset_status.config(bg=RED)
         
     def checkconnection(self) -> None:
         host = '127.0.0.1'
@@ -83,9 +91,10 @@ class App(Tk):
         # build GUI
         super().__init__()
 
-        self.title('[NeuroSky MindWave] Brain Monitor and Logger')
+        #self.title('[NeuroSky MindWave] Brain Monitor and Logger')
+        self.title('BMLVIS')
         self.iconbitmap('./icon/favicon.ico')
-        self.geometry('720x480')
+        self.geometry('780x520')
         self.resizable(False, False)
 
         self.defaultFont = font.nametofont('TkDefaultFont')
@@ -100,6 +109,10 @@ class App(Tk):
         self.experience = IntVar()
         self.sessiondate = None
         self.datafilename = ''
+        self.foldername = ''
+
+        self.CSV = PhotoImage(file = r"./imgs/csv.png")
+        self.FOLDER = PhotoImage(file = r"./imgs/folder.png")
 
         # menu
         menu = Menu(self)
@@ -119,67 +132,65 @@ class App(Tk):
         help.add_command(label='Help', command=self.command)
         menu.add_cascade(label='Help', menu=help)
 
-        self.config(menu=menu)
+        self.config(menu=menu, bg=BLUE1)
 
         # side frame
-        self.sideframe = Frame(self, padx=10, pady=10, bg=LIGHT_GREY)
-        self.sideframe.pack(expand=False, fill='both', side='left', anchor='w')
+        self.sideframe = Frame(self, padx=10, pady=10, bg=BLUE1)
+        self.sideframe.pack(expand=False, fill='both', side='left', anchor='w', padx=(0, 50))
 
-        Label(self.sideframe, text='Brain Monitor and Logger', bg=LIGHT_GREY, font=("Arial", 12, font.BOLD), border=0).pack(side='top', anchor='w')
-        Label(self.sideframe, text='for NeuroSky MindWave', bg=LIGHT_GREY, fg=GREY, font=("Arial", 8), border=0).pack(side='top', anchor='w')
+        Label(self.sideframe, text='BrainMoLoVIS', bg=BLUE1, fg='white', font=("Arial", 12, font.BOLD), border=0).pack(side='top', anchor='w')
+        Label(self.sideframe, text='for NeuroSky MindWave', bg=BLUE1, fg=GREY, font=("Arial", 8), border=0).pack(side='top', anchor='w')
 
-        framestatus = LabelFrame(self.sideframe, text='Headset connection status', bg=LIGHT_GREY, padx=5, pady=5)
+        framestatus = Frame(self.sideframe, bg=BLUE1)
         framestatus.pack(fill='x', side='bottom')
 
-        Button(framestatus, text='Check connection', command=self.checkconnection).pack(side='bottom', anchor='w', pady=5)
-
-        self.label_last_check = Label(framestatus, text='Last status check: n.a.', bg=LIGHT_GREY, fg=GREY, border=0, font=("Arial", 8))
-        self.label_last_check.pack(side='bottom', anchor='w')
-
-        self.label_headset_status = Label(framestatus, text=DISCONNECTED, bg=LIGHT_GREY, fg=RED, font=("Arial", 10, font.BOLD), border=0)
-        self.label_headset_status.pack(side='bottom', anchor='w')
+        Label(framestatus, text='Headset status', bg=BLUE1, fg=LIGHT_GREY, padx=0, font=("Arial", 10, font.BOLD)).pack(side='top', anchor='w', pady=(0,5))
+        
+        self.label_headset_status = Label(framestatus, text=DISCONNECTED, bg=RED, fg='white', font=("Arial", 10, font.BOLD), border=0, padx=4, pady=2)
+        self.label_headset_status.pack(side='top', anchor='w')
+        Label(framestatus, text='Last status check:', bg=BLUE1, fg=GREY, border=0, font=("Arial", 8)).pack(side='top', anchor='w')
+        self.label_last_check = Label(framestatus, text='n.a.', bg=BLUE1, fg=LIGHT_GREY, border=0, font=("Arial", 8))
+        self.label_last_check.pack(side='top', anchor='w')
+        Button(framestatus, text='Check connection', command=self.checkconnection).pack(side='top', anchor='w', pady=(5,0))
 
         # main frame
-        self.mainframe = Frame(self)
-        self.mainframe.pack(expand=True, fill='both', side='right')
+        mainframe = Frame(self, bg=LIGHT_GREY)
+        mainframe.pack(expand=True, fill='both', side='right')
 
-        tabcontrol = Notebook(self.mainframe)
-        tab1 = Frame(tabcontrol, padx=10, pady=10)
-        tab2 = Frame(tabcontrol, padx=10, pady=10)
-        tabcontrol.add(tab1, text='Monitoring')
-        tabcontrol.add(tab2, text='Data visualization')
-        tabcontrol.pack(expand=True, fill='both')
+        ## monitor/logger module
+        monitorframe = Frame(mainframe, padx=10, pady=10)
+        monitorframe.pack(fill='x', side='top', padx=10, pady=10)
+
+        Label(monitorframe, text='Monitor and Logger Module', font=("Arial", 12, font.BOLD)).pack(anchor='w', side='top', pady=(0,10))
+        monitorframegrid = Frame(monitorframe)
+        monitorframegrid.pack(fill='x', side='top')
+        monitorframegrid.columnconfigure(0, weight=1)
+        Label(monitorframegrid, text='Mindwave Monitoring Dashboard', font=("Arial", 10, font.BOLD), fg=DARK_GREY).grid(row=0, column=0, sticky='w')
+        Button(monitorframegrid, text='Open', command=self.monitoring_window).grid(row=0, column=1)
+
+        ## vizualition module options
+        visframe = Frame(mainframe, padx=10, pady=10)
+        visframe.pack(fill='x', side='top', padx=10, pady=10)
+
+        Label(visframe, text='Visualization Module', font=("Arial", 12, font.BOLD)).pack(anchor='w', side='top', pady=(0,10))
+
+        visframegrid = Frame(visframe)
+        visframegrid.pack(fill='x', side='top')
+        visframegrid.columnconfigure(1, weight=1)
         
-        ### tab1: monitor only
-        monitorframe = LabelFrame(tab1, text='Monitoring information', padx=10, pady=10)
-        monitorframe.pack(fill='x', side='top')
-        Label(monitorframe, text='RawEeg').pack(side='top', anchor='w')
-        Label(monitorframe, text='Eyes blink detection').pack(side='top', anchor='w')
-        Label(monitorframe, text='eSense Meditation').pack(side='top', anchor='w')
-        Label(monitorframe, text='eSense Attetion').pack(side='top', anchor='w')
-        Label(monitorframe, text='EegPower').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- delta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- theta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- lowAlpha').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- highAlpha').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- lowBeta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- highBeta').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- lowGamma').pack(side='top', anchor='w')
-        Label(monitorframe, text='\t- highGamma').pack(side='top', anchor='w')
-        
-        Button(tab1, text='Start monitoring', command=self.monitoring_window).pack(side='top', anchor='w', pady=10)
+        ### single file
+        Label(visframegrid, text='Single Datafile', fg=DARK_GREY, font=("Arial", 10, font.BOLD)).grid(row=0, column=0, padx=(0,10), sticky='w')
+        self.datafilevis = Label(visframegrid, font=("Arial", 8), text='Select a file...', background=LIGHT_GREY)
+        self.datafilevis.grid(row=0, column=1, sticky='ew', padx=(0,10), pady=(0,5))
+        Button(visframegrid, text='Choose file', image=self.CSV, command=self.select_datafile_vis).grid(row=0, column=2, padx=(0,10), pady=(0,5))
+        Button(visframegrid, text='Open', command=self.visualization_single_window).grid(row=0, column=3, pady=(0,5))
 
-        ### tab2: visualization
-        visframe = LabelFrame(tab2, text='Data file', padx=10, pady=10)
-        visframe.pack(fill='x', side='top')
-
-        Label(visframe, text='Selected data file:').pack(anchor='w', side='top')
-        self.datafilevis = Text(visframe, height=5)
-        self.datafilevis.pack(side='top', anchor='center', expand=True, fill='x', pady=10)
-        self.datafilevis.configure(state='disabled')
-        Button(visframe, text='Choose file', command=self.select_data_file).pack(side='top', anchor='w')
-
-        Button(tab2, text='Open visualization module', command=self.visualization_window).pack(side='top', anchor='w', pady=10)
+        ### multiple files, i.e. folder
+        Label(visframegrid, text='Multiple Datafiles', fg=DARK_GREY, font=("Arial", 10, font.BOLD)).grid(row=1, column=0, padx=(0,10), sticky='w')
+        self.foldervis = Label(visframegrid, font=("Arial", 8), text='Select a folder...', background=LIGHT_GREY)
+        self.foldervis.grid(row=1, column=1, sticky='ew', padx=(0,10))
+        Button(visframegrid, text='Choose file', image=self.FOLDER, command=self.select_folder_vis).grid(row=1, column=2, padx=(0,10))
+        Button(visframegrid, text='Open', command=self.visualization_multiple_window).grid(row=1, column=3)
 
         load_config()
 
