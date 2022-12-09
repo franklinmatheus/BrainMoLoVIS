@@ -10,7 +10,7 @@ from numpy import arange
 from brainmolovis.appconfig.config import get_logger_file_sep
 from brainmolovis.apputils.mindwavedata import *
 
-# matriz de correlação entre bands
+
 class VisualizationWindow(Toplevel):
 
     def quit(self) -> None:
@@ -96,8 +96,39 @@ class SingleFileVisualizationWindow(VisualizationWindow):
 
         self.canvas.draw()
 
+    def esense_meditation_history_line(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        heatmap([self.df['esensemed']], cmap='Spectral_r', ax=ax, 
+                    yticklabels=False, xticklabels=False,
+                    cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+        ax.set_title('eSense Meditation Heatmap')
+        ax.set_xlabel('Samples')
+
+        self.canvas.draw()
+    
+    def esense_meditation_history_heatmap(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        lineplot(self.df['esensemed'], color='blue', ax=ax)
+        regplot(x=arange(0,len(self.df['esensemed']),1), y=self.df['esensemed'], fit_reg=True, ax=ax, color='black', scatter_kws=dict(alpha=0)) 
+        
+        ax.set_title('eSense Meditation History')
+        ax.set_ylabel('eSense Meditation')
+        ax.set_xlabel('Samples')
+
+        self.canvas.draw()
+
     def power_bands_correlation(self) -> None:
-        pass
+        bands = ['delta','theta','lowalpha','highalpha','lowbeta','highbeta','lowgamma','highgamma']
+        cols = list(set(bands) & set(self.df.columns))
+
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        heatmap(self.df[cols].corr(method='pearson'), cmap='rocket_r', ax=ax, annot=True,
+                cbar_kws=dict(location="bottom", shrink=0.5))
+
+        ax.set_title('Power Bands Pearson Correlation Matrix')
 
     def __init__(self, parent, datafile) -> None:
         super().__init__(parent)
@@ -123,15 +154,29 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         self.buttonop2.pack(side='left')
         Label(op2frame, text='eSense Attention History').pack(side='left')
 
+        # OP3
+        op3frame = Frame(singlevisframe, pady=5)
+        op3frame.pack(side='top', anchor='w')
+        self.buttonop3 = Button(op3frame, image=self.SHOWICON, command=self.esense_meditation_history_heatmap)
+        self.buttonop3.pack(side='left')
+        Label(op3frame, text='eSense Meditation Heatmap').pack(side='left')
+
+        # OP4
+        op4frame = Frame(singlevisframe, pady=5)
+        op4frame.pack(side='top', anchor='w')
+        self.buttonop4 = Button(op4frame, image=self.SHOWICON, command=self.esense_meditation_history_line)
+        self.buttonop4.pack(side='left')
+        Label(op4frame, text='eSense Meditation History').pack(side='left')
+
         multiplevisframe = LabelFrame(self.optionsframe, text='Multiple Data Visualizations', padx=5, pady=5)
         multiplevisframe.pack(fill='x', pady=5)
 
-        # OP3
-        op3frame = Frame(multiplevisframe, pady=5)
-        op3frame.pack(side='top', anchor='w')
-        self.buttonop3 = Button(op3frame, image=self.SHOWICON, command=self.power_bands_correlation)
-        self.buttonop3.pack(side='left')
-        Label(op3frame, text='Power bands correlation').pack(side='left')
+        # OP5
+        op5frame = Frame(multiplevisframe, pady=5)
+        op5frame.pack(side='top', anchor='w')
+        self.buttonop5 = Button(op5frame, image=self.SHOWICON, command=self.power_bands_correlation)
+        self.buttonop5.pack(side='left')
+        Label(op5frame, text='Power Bands Pearson Correlation').pack(side='left')
 
 
 class MultipleFilesVisualizationWindow(VisualizationWindow):

@@ -27,6 +27,14 @@ default_config = {
             'genmed':12
         },
     },
+    'monitor': {
+        'average': 0,
+        'esenseat': 1,
+        'esensemed': 1,
+        'genat': 'Theta/highBeta',
+        'genmed': 'highAlpha',
+        'range': 30
+    }
 }
 
 def create_default_config() -> None:
@@ -90,3 +98,57 @@ def get_logger_file_content_reduced() -> tuple[list, dict, str]:
 def get_logger_file_sep() -> str:
     temp = load_config()
     return temp['logger_file']['sep']
+
+def get_show_average() -> int:
+    temp = load_config()
+    return temp['monitor']['average']
+
+def set_show_average(show_average: int) -> None:
+    temp = load_config()
+    temp['monitor']['average'] = show_average
+    save_config(temp)
+
+def get_show_esenseat() -> int:
+    temp = load_config()
+    return temp['monitor']['esenseat']
+
+def set_show_esenseat(show_esenseat: int) -> None:
+    temp = load_config()
+    temp['monitor']['esenseat'] = show_esenseat
+    save_config(temp)
+
+def get_show_esensemed() -> int:
+    temp = load_config()
+    return temp['monitor']['esensemed']
+
+def set_show_esensemed(show_esensemed: int) -> None:
+    temp = load_config()
+    temp['monitor']['esensemed'] = show_esensemed
+    save_config(temp)
+
+def get_opt_genat() -> str:
+    temp = load_config()
+    return temp['monitor']['genat']
+
+def set_opt_genat(opt_genat: str) -> None:
+    temp = load_config()
+    temp['monitor']['genat'] = opt_genat
+    save_config(temp)
+
+def get_opt_genmed() -> str:
+    temp = load_config()
+    return temp['monitor']['genmed']
+
+def set_opt_genmed(opt_genmed: str) -> None:
+    temp = load_config()
+    temp['monitor']['genmed'] = opt_genmed
+    save_config(temp)
+
+def get_xaxis_range() -> int:
+    temp = load_config()
+    return temp['monitor']['range']
+
+def set_xaxis_range(xaxis_range: int) -> None:
+    temp = load_config()
+    temp['monitor']['range'] = xaxis_range
+    save_config(temp)

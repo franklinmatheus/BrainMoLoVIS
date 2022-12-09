@@ -1,5 +1,5 @@
 {
-    "export_path": "C:/Users/frank/Documents/UFRN/PPGSC/Semestres/3/TOPICOS/mindwave/BrainMoLoVIS/data",
+    "export_path": "C:\\Users\\frank\\Documents\\UFRN\\PPGSC\\Semestres\\3\\TOPICOS\\mindwave\\BrainMoLoVIS",
     "logger_file": {
         "filename": {
             "subject": 0,
@@ -22,5 +22,13 @@
             "genat": 11,
             "genmed": 12
         }
+    },
+    "monitor": {
+        "average": 0,
+        "esenseat": 1,
+        "esensemed": 1,
+        "genat": "Theta/lowBeta",
+        "genmed": "highAlpha",
+        "range": 30
     }
 }
