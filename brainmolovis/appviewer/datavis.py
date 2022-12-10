@@ -13,9 +13,9 @@ from brainmolovis.apputils.mindwavedata import *
 
 class VisualizationWindow(Toplevel):
 
-    def quit(self) -> None:
-        self.canvas.get_tk_widget().destroy()
-        self.destroy()
+    def handle_close(self) -> None:
+        self.canvas.get_tk_widget().after(100, self.canvas.get_tk_widget().destroy)
+        self.after(100, self.destroy)
 
     def __init__(self, parent) -> None:
         super().__init__(parent)
@@ -37,8 +37,8 @@ class VisualizationWindow(Toplevel):
         singlevisframe = LabelFrame(self.optionsframe, text='Single Data Visualizations', padx=5, pady=5)
         singlevisframe.pack(fill='x', pady=5)
 
-        chartframe = Frame(mainframe, background='white', highlightbackground='black', highlightthickness=1, padx=5, pady=5)
-        chartframe.pack(expand=True, fill='both', side='right')
+        self.chartframe = Frame(mainframe, background='white', highlightbackground='black', highlightthickness=1, padx=5, pady=5)
+        self.chartframe.pack(expand=True, fill='both', side='right')
 
         self.fig = Figure()
         ax = self.fig.add_subplot(111)
@@ -47,11 +47,11 @@ class VisualizationWindow(Toplevel):
         def on_key_press(event):
             key_press_handler(event, self.canvas, self.toolbar)
 
-        self.canvas = FigureCanvasTkAgg(self.fig, master=chartframe)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.chartframe)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
 
-        self.toolbar = NavigationToolbar2Tk(self.canvas, chartframe)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.chartframe)
         self.toolbar.config(background='white')
         self.toolbar._message_label.config(background='white')
         self.toolbar.update()
@@ -62,7 +62,7 @@ class VisualizationWindow(Toplevel):
         set_theme()
 
         botframe = Frame(self)
-        Button(botframe, text='Close', command=self.quit).pack(anchor='e')
+        Button(botframe, text='Close', command=self.handle_close).pack(anchor='e')
         botframe.pack(fill='x', side='bottom', padx=10, pady=(0,10))
 
 
@@ -88,7 +88,7 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         lineplot(self.df['esenseat'], color='red', ax=ax)
-        regplot(x=arange(0,len(self.df['esenseat']),1), y=self.df['esenseat'], fit_reg=True, ax=ax, color='black', scatter_kws=dict(alpha=0)) 
+        regplot(x=arange(0,len(self.df['esenseat']),1), y=self.df['esenseat'], fit_reg=True, ax=ax, color='black', scatter_kws=dict(alpha=0))
         
         ax.set_title('eSense Attention History')
         ax.set_ylabel('eSense Attention')
@@ -129,6 +129,8 @@ class SingleFileVisualizationWindow(VisualizationWindow):
                 cbar_kws=dict(location="bottom", shrink=0.5))
 
         ax.set_title('Power Bands Pearson Correlation Matrix')
+
+        self.canvas.draw()
 
     def __init__(self, parent, datafile) -> None:
         super().__init__(parent)

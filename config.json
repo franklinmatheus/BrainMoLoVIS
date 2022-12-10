@@ -3,6 +3,7 @@
     "logger_file": {
         "filename": {
             "subject": 0,
+            "session": -1,
             "date": 1,
             "time": 2
         },
@@ -24,11 +25,11 @@
         }
     },
     "monitor": {
-        "average": 0,
+        "average": 1,
         "esenseat": 1,
         "esensemed": 1,
-        "genat": "Theta/lowBeta",
-        "genmed": "highAlpha",
+        "genat": "Theta/High Beta",
+        "genmed": "High Alpha",
         "range": 30
     }
 }

@@ -58,8 +58,8 @@ class App(Tk):
             print('connected')
             pass
 
-    def quit(self) -> None:
-        self.destroy()
+    def handle_close(self) -> None:
+        super().quit()
 
     def command(self) -> None:
         print('command')
@@ -117,7 +117,7 @@ class App(Tk):
         # menu
         menu = Menu(self)
         filemenu = Menu(menu, tearoff=0)
-        filemenu.add_command(label='Exit', command=self.quit)
+        filemenu.add_command(label='Exit', command=self.handle_close)
         menu.add_cascade(label='File', menu=filemenu)
 
         options = Menu(menu, tearoff=0)

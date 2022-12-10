@@ -7,8 +7,9 @@ default_config = {
     'logger_file': {
         'filename': {
             'subject':0,
-            'date':1,
-            'time':2
+            'session':1,
+            'date':2,
+            'time':3
         },
         'sep':';',
         'content': {
@@ -31,8 +32,8 @@ default_config = {
         'average': 0,
         'esenseat': 1,
         'esensemed': 1,
-        'genat': 'Theta/highBeta',
-        'genmed': 'highAlpha',
+        'genat': 'Theta/High Beta',
+        'genmed': 'High Alpha',
         'range': 30
     }
 }
@@ -152,3 +153,7 @@ def set_xaxis_range(xaxis_range: int) -> None:
     temp = load_config()
     temp['monitor']['range'] = xaxis_range
     save_config(temp)
+
+def is_session_required() -> bool:
+    temp = load_config()
+    return temp['logger_file']['filename']['session'] != -1
