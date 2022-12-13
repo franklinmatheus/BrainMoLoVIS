@@ -1,21 +1,32 @@
-from tkinter import Button, Label, PhotoImage, Toplevel, Frame, font, LabelFrame
+from tkinter import Button, Label, PhotoImage, Toplevel, Frame, font, LabelFrame, IntVar, StringVar, Entry, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
-from matplotlib.pyplot import clf
-from pandas import read_csv, DataFrame
-from seaborn import set_theme, lineplot, heatmap, regplot
+from seaborn import set_theme, lineplot, heatmap, regplot, boxplot
 from numpy import arange
+from pandas import concat
+from sklearn.preprocessing import MinMaxScaler
 
-from brainmolovis.appconfig.config import get_logger_file_sep
 from brainmolovis.apputils.mindwavedata import *
-
 
 class VisualizationWindow(Toplevel):
 
+    def create_singledatavis_opt(self, title, func) -> None:
+        opframe = Frame(self.singledatavisframe, pady=5)
+        opframe.pack(side='top', anchor='w')
+        self.buttonop1 = Button(opframe, image=self.SHOWICON, command=func)
+        self.buttonop1.pack(side='left')
+        Label(opframe, text=title).pack(side='left')
+
+    def create_multipledatavis_opt(self, title, func) -> None:
+        opframe = Frame(self.multipledatavisframe, pady=5)
+        opframe.pack(side='top', anchor='w')
+        self.buttonop5 = Button(opframe, image=self.SHOWICON, command=func)
+        self.buttonop5.pack(side='left')
+        Label(opframe, text=title).pack(side='left')
+
     def handle_close(self) -> None:
-        self.canvas.get_tk_widget().after(100, self.canvas.get_tk_widget().destroy)
-        self.after(100, self.destroy)
+        self.destroy()
 
     def __init__(self, parent) -> None:
         super().__init__(parent)
@@ -34,8 +45,11 @@ class VisualizationWindow(Toplevel):
         
         self.SHOWICON = PhotoImage(file = r"./imgs/show.png")
 
-        singlevisframe = LabelFrame(self.optionsframe, text='Single Data Visualizations', padx=5, pady=5)
-        singlevisframe.pack(fill='x', pady=5)
+        self.singledatavisframe = LabelFrame(self.optionsframe, text='Single Data Visualizations', padx=5, pady=5)
+        self.singledatavisframe.pack(fill='x', pady=5)
+
+        self.multipledatavisframe = LabelFrame(self.optionsframe, text='Multiple Data Visualizations', padx=5, pady=5)
+        self.multipledatavisframe.pack(fill='x', pady=5)
 
         self.chartframe = Frame(mainframe, background='white', highlightbackground='black', highlightthickness=1, padx=5, pady=5)
         self.chartframe.pack(expand=True, fill='both', side='right')
@@ -68,23 +82,7 @@ class VisualizationWindow(Toplevel):
 
 class SingleFileVisualizationWindow(VisualizationWindow):
 
-    def load_dataframe(self) -> DataFrame:
-        sep = get_logger_file_sep()
-
-        return read_csv(self.datafile, sep=sep)
-
     def esense_attention_history_line(self) -> None:
-        self.fig.clear()
-        ax = self.fig.add_subplot(111)
-        heatmap([self.df['esenseat']], cmap='Spectral_r', ax=ax, 
-                    yticklabels=False, xticklabels=False,
-                    cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
-        ax.set_title('eSense Attention Heatmap')
-        ax.set_xlabel('Samples')
-
-        self.canvas.draw()
-    
-    def esense_attention_history_heatmap(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         lineplot(self.df['esenseat'], color='red', ax=ax)
@@ -95,19 +93,19 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         ax.set_xlabel('Samples')
 
         self.canvas.draw()
-
-    def esense_meditation_history_line(self) -> None:
+    
+    def esense_attention_history_heatmap(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        heatmap([self.df['esensemed']], cmap='Spectral_r', ax=ax, 
+        heatmap([self.df['esenseat']], cmap='Spectral_r', ax=ax, 
                     yticklabels=False, xticklabels=False,
                     cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
-        ax.set_title('eSense Meditation Heatmap')
+        ax.set_title('eSense Attention Heatmap')
         ax.set_xlabel('Samples')
 
         self.canvas.draw()
-    
-    def esense_meditation_history_heatmap(self) -> None:
+
+    def esense_meditation_history_line(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         lineplot(self.df['esensemed'], color='blue', ax=ax)
@@ -115,6 +113,17 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         
         ax.set_title('eSense Meditation History')
         ax.set_ylabel('eSense Meditation')
+        ax.set_xlabel('Samples')
+
+        self.canvas.draw()
+    
+    def esense_meditation_history_heatmap(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        heatmap([self.df['esensemed']], cmap='Spectral_r', ax=ax, 
+                    yticklabels=False, xticklabels=False,
+                    cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+        ax.set_title('eSense Meditation Heatmap')
         ax.set_xlabel('Samples')
 
         self.canvas.draw()
@@ -132,78 +141,154 @@ class SingleFileVisualizationWindow(VisualizationWindow):
 
         self.canvas.draw()
 
-    def __init__(self, parent, datafile) -> None:
+    def __init__(self, parent, df) -> None:
         super().__init__(parent)
 
-        self.datafile = datafile
+        self.df = df
 
-        self.df = self.load_dataframe()
+        self.create_singledatavis_opt('eSense Attention History', self.esense_attention_history_line)
+        self.create_singledatavis_opt('eSense Attention Heatmap', self.esense_attention_history_heatmap)
+        self.create_singledatavis_opt('eSense Meditation History', self.esense_meditation_history_line)
+        self.create_singledatavis_opt('eSense Meditation Heatmap', self.esense_meditation_history_heatmap)
 
-        singlevisframe = LabelFrame(self.optionsframe, text='Single Data Visualizations', padx=5, pady=5)
-        singlevisframe.pack(fill='x', pady=5)
+        self.create_multipledatavis_opt('Power Bands Pearson Correlation', self.power_bands_correlation)
 
-        # OP1
-        op1frame = Frame(singlevisframe, pady=5)
-        op1frame.pack(side='top', anchor='w')
-        self.buttonop1 = Button(op1frame, image=self.SHOWICON, command=self.esense_attention_history_line)
-        self.buttonop1.pack(side='left')
-        Label(op1frame, text='eSense Attention Heatmap').pack(side='left')
 
-        # OP2
-        op2frame = Frame(singlevisframe, pady=5)
-        op2frame.pack(side='top', anchor='w')
-        self.buttonop2 = Button(op2frame, image=self.SHOWICON, command=self.esense_attention_history_heatmap)
-        self.buttonop2.pack(side='left')
-        Label(op2frame, text='eSense Attention History').pack(side='left')
+class SetFilesTagsWindow(Toplevel):
 
-        # OP3
-        op3frame = Frame(singlevisframe, pady=5)
-        op3frame.pack(side='top', anchor='w')
-        self.buttonop3 = Button(op3frame, image=self.SHOWICON, command=self.esense_meditation_history_heatmap)
-        self.buttonop3.pack(side='left')
-        Label(op3frame, text='eSense Meditation Heatmap').pack(side='left')
+    def get_inputed(self): return self.inputed
+    def get_tags(self): return [tag.get() for tag in self.tags]
 
-        # OP4
-        op4frame = Frame(singlevisframe, pady=5)
-        op4frame.pack(side='top', anchor='w')
-        self.buttonop4 = Button(op4frame, image=self.SHOWICON, command=self.esense_meditation_history_line)
-        self.buttonop4.pack(side='left')
-        Label(op4frame, text='eSense Meditation History').pack(side='left')
+    def process_input(self):
+        allvalid = True
+        for tag in self.tags:
+            if tag.get() == '': 
+                allvalid = False
+                break
+        
+        if allvalid: 
+            self.inputed.set(1)
+            self.destroy()
+        else: messagebox.showinfo('Error', 'You must inform all tags!', parent=self)
 
-        multiplevisframe = LabelFrame(self.optionsframe, text='Multiple Data Visualizations', padx=5, pady=5)
-        multiplevisframe.pack(fill='x', pady=5)
+    def process_close(self):
+        self.inputed.set(2)
+        self.destroy()
 
-        # OP5
-        op5frame = Frame(multiplevisframe, pady=5)
-        op5frame.pack(side='top', anchor='w')
-        self.buttonop5 = Button(op5frame, image=self.SHOWICON, command=self.power_bands_correlation)
-        self.buttonop5.pack(side='left')
-        Label(op5frame, text='Power Bands Pearson Correlation').pack(side='left')
+    def __init__(self, parent, files) -> None:
+        super().__init__(parent)
+
+        self.title('File Tags')
+        #self.geometry('720x480')
+        self.resizable(False, False)
+        self.config(padx=10, pady=10)
+        self.protocol('WM_DELETE_WINDOW', self.process_close)
+        
+        self.inputed = IntVar(value=0)
+        self.tags = []
+
+        Label(self, text='Set the File Tags', font=("Arial", 10, font.BOLD)).pack(anchor='center', pady=(0,10))
+
+        inputsgrid = Frame(self)
+        inputsgrid.grid_columnconfigure(1, weight=1)
+
+        for i in range(0,len(files)):
+            self.tags.append(StringVar(self))
+            self.tags[i].set('File'+str(i))
+
+            Label(inputsgrid, text=files[i]).grid(row=i, column=0, pady=(0,10), sticky='e', padx=(0,10))
+            input = Entry(inputsgrid, textvariable=self.tags[i], border=1)
+            input.grid(row=i, column=1, pady=0, sticky='ew')
+        
+        inputsgrid.pack(fill='x', anchor='center')
+
+        Button(self, text='Open', command=self.process_input).pack(anchor='center', side='bottom')
 
 
 class MultipleFilesVisualizationWindow(VisualizationWindow):
 
-    def load_dataframe(self) -> DataFrame:
-        sep = get_logger_file_sep()
+    def esense_attention_variation(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        boxplot(data=self.df, y='esenseat', x='tag', hue='tag', ax=ax, dodge=False)
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.set_xticklabels([])
+        ax.set_xlabel('Files')
+        ax.set_ylabel('eSense Attention')
+        ax.set_title('eSense Attention Variation')
 
-        return None
+        self.canvas.draw()
 
-    def command(self) -> None:
-        print('command')
+    def generated_attention_variation(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        boxplot(data=self.df, y=self.genat_type, x='tag', hue='tag', ax=ax, dodge=False)
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.set_xticklabels([])
+        ax.set_xlabel('Files')
+        ax.set_ylabel('Generated Attention')
+        ax.set_title('Generated Attention ('+ str(self.genat_type.split('_')[1]) +') Variation')
 
-    def __init__(self, parent, foldername) -> None:
+        self.canvas.draw()
+
+    def esense_meditation_variation(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        boxplot(data=self.df, y='esensemed', x='tag', hue='tag', ax=ax, dodge=False)
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.set_xticklabels([])
+        ax.set_xlabel('Files')
+        ax.set_ylabel('eSense Meditation')
+        ax.set_title('eSense Meditation Variation')
+
+        self.canvas.draw()
+
+    def generated_meditation_variation(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        boxplot(data=self.df, y=self.genmed_type, x='tag', hue='tag', ax=ax, dodge=False)
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.set_xticklabels([])
+        ax.set_xlabel('Files')
+        ax.set_ylabel('Generated Meditation')
+        ax.set_title('Generated Meditation ('+ str(self.genmed_type.split('_')[1]) +') Variation')
+
+        self.canvas.draw()
+
+    def __init__(self, parent, dfs, files, tags) -> None:
         super().__init__(parent)
 
-        self.foldername = foldername
+        self.files = files
+        self.tags = tags
+        self.genat_type = ''
+        self.genmed_type = ''
 
-        self.df = self.load_dataframe()
+        for i in range(0,len(dfs)): 
+            dfs[i]['tag'] = self.tags[i]
 
-        singlevisframe = LabelFrame(self.optionsframe, text='Example Visualization Category', padx=5, pady=5)
-        singlevisframe.pack(fill='x', pady=5)
+            gens = {i.split('_')[0]:i for i in dfs[i].columns if 'gen' in i}
+            
+            if 'genat' in gens:
+                if self.genat_type == '': self.genat_type = gens['genat']
+                elif self.genat_type == 'None': pass
+                elif self.genat_type != gens['genat']: self.genat_type = 'None'
+            else: self.genat_type = 'None'
 
-        # OP1
-        op1frame = Frame(singlevisframe, pady=5)
-        op1frame.pack(side='top', anchor='w')
-        self.buttonop1 = Button(op1frame, image=self.SHOWICON, command=self.command)
-        self.buttonop1.pack(side='left')
-        Label(op1frame, text='Example Visualization').pack(side='left')
+            if 'genmed' in gens:
+                if self.genmed_type == '': self.genmed_type = gens['genmed']
+                elif self.genmed_type == 'None': pass
+                elif self.genmed_type != gens['genmed']: self.genmed_type = 'None'
+            else: self.genmed_type = 'None'
+
+            scaler = MinMaxScaler((0,100))
+            dfs[i][[self.genat_type,self.genmed_type]] = scaler.fit_transform(dfs[i][[self.genat_type,self.genmed_type]])
+            
+        self.df = concat(dfs, ignore_index=True)
+
+        self.create_singledatavis_opt('eSense Attention Variation', self.esense_attention_variation)
+        self.create_singledatavis_opt('eSense Meditation Variation', self.esense_meditation_variation)
+
+        if self.genat_type != 'None':
+            self.create_singledatavis_opt('Generated Attention Variation', self.generated_attention_variation)
+        if self.genmed_type != 'None':
+            self.create_singledatavis_opt('Generated Meditation Variation', self.generated_meditation_variation)

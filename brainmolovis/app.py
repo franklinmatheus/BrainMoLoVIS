@@ -1,35 +1,50 @@
 from datetime import datetime
 from os.path import basename
 import socket
-from tkinter import Button, Frame, IntVar, Label, LabelFrame, Menu, Tk, font, messagebox, PhotoImage
+from tkinter import Button, Frame, IntVar, Label, Menu, Tk, font, messagebox, PhotoImage
 from tkinter.ttk import Style
 from tkinter.filedialog import askopenfilename, askdirectory
 
 from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY, DARK_GREY, BLUE1
 from brainmolovis.appmonitor.monitor import MonitoringWindow
 from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
-from brainmolovis.appviewer.datavis import SingleFileVisualizationWindow, MultipleFilesVisualizationWindow
+from brainmolovis.appviewer.datavis import SingleFileVisualizationWindow, MultipleFilesVisualizationWindow, SetFilesTagsWindow
 from brainmolovis.appconfig.config import load_config
+from brainmolovis.applogger.load import load_dataframe, load_folder_dataframes
 
-class App(Tk):
-        
+class App(Tk):    
+
     def monitoring_window(self) -> None:
         self.monitoringwindow = MonitoringWindow(self)
         self.monitoringwindow.grab_set()
 
     def visualization_single_window(self) -> None:
         if self.datafilename != '':
-            self.visualizationwindow = SingleFileVisualizationWindow(self, self.datafilename)
-            self.visualizationwindow.grab_set()
-        else:
-            messagebox.showinfo('Error', 'Please, inform a valid file!')
+            df = load_dataframe(self.datafilename)
+            
+            if not df.empty:
+                self.visualizationwindow = SingleFileVisualizationWindow(self, df)
+                self.visualizationwindow.grab_set()
+            else: messagebox.showinfo('Error', 'Unable to load the file. Check for unsupported variables or wrong structure of the file.', parent=self)
+        else: messagebox.showinfo('Error', 'Please, inform a valid file!')
 
     def visualization_multiple_window(self) -> None:
         if self.foldername != '':
-            self.visualizationwindow = MultipleFilesVisualizationWindow(self, self.foldername)
-            self.visualizationwindow.grab_set()
-        else:
-            messagebox.showinfo('Error', 'Please, inform a valid directory!')
+            dfs, files, file_error = load_folder_dataframes(self.foldername)
+
+            if len(dfs) > 1:
+                inputtags = SetFilesTagsWindow(self, files)
+                inputtags.grab_set()
+                self.wait_variable(inputtags.get_inputed())
+
+                if inputtags.get_inputed().get() == 1:
+                    tags = inputtags.get_tags()
+
+                    self.visualizationwindow = MultipleFilesVisualizationWindow(self, dfs, files, tags)
+                    self.visualizationwindow.grab_set()
+            elif len(dfs) == 1: messagebox.showinfo('Error', 'Unable to open the multiple datafile viewer with a unique file.', parent=self)
+            else: messagebox.showinfo('Error', 'Unable to load ' + file_error + ' correctly.', parent=self)
+        else: messagebox.showinfo('Error', 'Please, inform a valid directory!')
 
     def logger_export_window(self) -> None:
         self.configexportpathwindow = ConfigExportPathWindow(self)

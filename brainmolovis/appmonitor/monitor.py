@@ -2,6 +2,7 @@ import socket
 from threading import Thread
 from time import strftime, sleep
 from datetime import datetime
+from os import remove
 from tkinter import Button, IntVar, StringVar, Label, PhotoImage, Toplevel, messagebox, Frame, font, Checkbutton, Radiobutton
 from tkinter.ttk import Separator, Combobox
 from matplotlib.animation import FuncAnimation
@@ -20,10 +21,53 @@ from brainmolovis.appconfig.subject import InputSessionSubjectWindow
 from brainmolovis.appconfig.config import *
 from brainmolovis.apputils.mindwavedata import *
 
-development = True
+development = False
 
 class MonitoringWindow(Toplevel):
     
+    def process_received_packet(self, packet) -> None:
+        for line in packet.split('\r'):
+            if 'rawEeg' in line:
+                self.raw_eeg_data.append(get_raweeg(line))
+            
+            if 'blinkStrength' in line: 
+                self.blink = get_blink_strength(line)
+                self.blinks.append(get_blink_strength(line))
+            
+            if 'eSense' in line:
+                if self.show_esenseat.get() == 1: self.attention_esense.append(get_attention(line))
+                if self.show_esensemed.get() == 1: self.meditation_esense.append(get_meditation(line))
+
+            if 'eegPower' in line:
+                self.eeg_power['delta'] = np.log10(get_delta(packet))
+                self.eeg_power['theta'] = np.log10(get_theta(packet))
+                self.eeg_power['lowAlpha'] = np.log10(get_low_alpha(packet))
+                self.eeg_power['highAlpha'] = np.log10(get_high_alpha(packet))
+                self.eeg_power['lowBeta'] = np.log10(get_low_beta(packet))
+                self.eeg_power['highBeta'] = np.log10(get_high_beta(packet))
+                self.eeg_power['lowGamma'] = np.log10(get_low_gamma(packet))
+                self.eeg_power['highGamma'] = np.log10(get_high_gamma(packet))
+
+                try:
+                    if self.gen_at_opt.get() == self.gen_at_opts[0]: # ['Theta/highBeta','Theta/lowBeta','None']
+                        value = round(get_theta(line)/get_high_beta(line),2)
+                        self.attention_gen.append(value)
+                    elif self.gen_at_opt.get() == self.gen_at_opts[1]:
+                        value = round(get_theta(line)/get_low_beta(line),2)
+                        self.attention_gen.append(value)
+                    #elif self.gen_at_opt.get() == self.gen_at_opts[2]: pass
+                except Exception: self.attention_gen.append(0)
+                
+                if self.gen_med_opt.get() == self.gen_med_opts[0]: # ['highAlpha','lowAlpha','None]
+                    self.meditation_gen.append(get_high_alpha(line))
+                elif self.gen_med_opt.get() == self.gen_med_opts[1]:
+                    self.meditation_gen.append(get_low_alpha(line))
+                #elif self.gen_med_opt.get() == self.gen_med_opts[2]: pass
+
+            if 'poorSignalLevel' in line:
+                self.signal = get_signal_level(line)
+                self.headset_quality_signal()
+
     def receive_socket_mindwave_data(self) -> None:
         host = '127.0.0.1'
         port = 13854
@@ -49,54 +93,13 @@ class MonitoringWindow(Toplevel):
                     self.destroy()
 
                 else:
-                    packet = data.decode('utf-8')
+                    packet = str(data.decode('utf-8'))
+                    self.process_received_packet(packet)
+                    self.blinks.append(0)
 
                     if self.record_mindwave_data:
-                        with open(self.export_file_temp_log, 'a') as file:
+                        with open(self.export_file_temp_log, 'a') as file: 
                             file.write(packet)
-
-                    if 'rawEeg' in packet: self.raw_eeg_data.append(get_raweeg(packet))
-                            
-                    if 'attention' in packet: 
-                        if self.show_esenseat.get() == 1: self.attention_esense.append(get_attention(packet))
-
-                    if 'meditation' in packet:    
-                        if self.show_esensemed.get() == 1: self.meditation_esense.append(get_meditation(packet))
-
-                    if 'blinkStrength' in packet: self.blink = get_blink_strength(packet)
-
-                    if 'eegPower' in packet:
-                        self.eeg_power['delta'] = np.log10(get_delta(packet))
-                        self.eeg_power['theta'] = np.log10(get_theta(packet))
-                        self.eeg_power['lowAlpha'] = np.log10(get_low_alpha(packet))
-                        self.eeg_power['highAlpha'] = np.log10(get_high_alpha(packet))
-                        self.eeg_power['lowBeta'] = np.log10(get_low_beta(packet))
-                        self.eeg_power['highBeta'] = np.log10(get_high_beta(packet))
-                        self.eeg_power['lowGamma'] = np.log10(get_low_gamma(packet))
-                        self.eeg_power['highGamma'] = np.log10(get_high_gamma(packet))
-
-                        try:
-                            if self.gen_at_opt.get() == self.gen_at_opts[0]: # ['Theta/highBeta','Theta/lowBeta','None']
-                                value = round(get_theta(packet)/get_high_beta(packet),2)
-                                self.attention_gen.append(value)
-                            elif self.gen_at_opt.get() == self.gen_at_opts[1]:
-                                value = round(get_theta(packet)/get_low_beta(packet),2)
-                                self.attention_gen.append(value)
-                            elif self.gen_at_opt.get() == self.gen_at_opts[2]:
-                                pass
-                            
-                            if self.gen_med_opt.get() == self.gen_med_opts[0]: # ['highAlpha','lowAlpha','None]
-                                self.meditation_gen.append(get_high_alpha(packet))
-                            elif self.gen_med_opt.get() == self.gen_med_opts[1]:
-                                self.meditation_gen.append(get_low_alpha(packet))
-                            elif self.gen_med_opt.get() == self.gen_med_opts[2]:
-                                pass
-
-                        except Exception: self.raw_eeg_data.append(0)
-
-                    if 'poorSignalLevel' in packet:
-                        self.signal = get_signal_level(packet)
-                        self.headset_quality_signal()
 
     def stream_from_file(self) -> None:        
         with open('streamdata_local.csv', 'r') as file:
@@ -125,8 +128,7 @@ class MonitoringWindow(Toplevel):
                         if delaycontrol >= 50: 
                             sleep(0.1)
                             delaycontrol = 0
-                    else:
-                            
+                    else:     
                         if 'attention' in packet: 
                             if self.show_esenseat.get() == 1: self.attention_esense.append(get_attention(packet))
                             
@@ -204,55 +206,58 @@ class MonitoringWindow(Toplevel):
                 thread.daemon = True
                 thread.start()
 
+    def save_formatted_export_file(self) -> None:
+        with open(self.export_file_temp_log, 'r') as filein:
+            output_row = ['']*len(self.file_format_seq)
+            for line in filein:
+                
+                if 'rawEeg' in line and 'raweeg' in self.file_format_seq:
+                        output_row[self.file_format['raweeg']] = output_row[self.file_format['raweeg']] + str(get_raweeg(line)) + ','
+                        continue
+                        
+                if 'attention' in line and 'esenseat' in self.file_format_seq:
+                        output_row[self.file_format['esenseat']] = str(get_attention(line))
+                    
+                if 'meditation' in line and 'esensemed' in self.file_format_seq:
+                        output_row[self.file_format['esensemed']] = str(get_meditation(line))
+                    
+                if 'eegPower' in line:
+
+                    value = 0
+                    if self.gen_at_opt.get() == self.gen_at_opts[0]: # ['Theta/highBeta','Theta/lowBeta','None']
+                        value = round(get_theta(line)/get_high_beta(line),2)
+                    elif self.gen_at_opt.get() == self.gen_at_opts[1]:
+                        value = round(get_theta(line)/get_low_beta(line),2)
+                    output_row[self.file_format['genat']] = str(value)
+                    
+                    value = 0
+                    if self.gen_med_opt.get() == self.gen_med_opts[0]: # ['highAlpha','lowAlpha','None]
+                        value = get_high_alpha(line)
+                    elif self.gen_med_opt.get() == self.gen_med_opts[1]:
+                        value = get_low_alpha(line)
+                    output_row[self.file_format['genmed']] = str(value)
+
+                    if 'delta' in self.file_format_seq: output_row[self.file_format['delta']] = str(get_delta(line))
+                    if 'theta' in self.file_format_seq: output_row[self.file_format['theta']] = str(get_theta(line))
+                    if 'lowalpha' in self.file_format_seq: output_row[self.file_format['lowalpha']] = str(get_low_alpha(line))
+                    if 'highalpha' in self.file_format_seq: output_row[self.file_format['highalpha']] = str(get_high_alpha(line))
+                    if 'lowbeta' in self.file_format_seq: output_row[self.file_format['lowbeta']] = str(get_low_beta(line))
+                    if 'highbeta' in self.file_format_seq: output_row[self.file_format['highbeta']] = str(get_high_beta(line))
+                    if 'lowgamma' in self.file_format_seq: output_row[self.file_format['lowgamma']] = str(get_low_gamma(line))
+                    if 'highgamma' in self.file_format_seq: output_row[self.file_format['highgamma']] = str(get_high_gamma(line))
+
+                    with open(self.export_file, 'a') as fileout:
+                        fileout.write(str(self.sep).join(output_row) + '\n')
+                        output_row = ['']*len(self.file_format_seq)
+
+        remove(self.export_file_temp_log)
+
     def start_pause_recording(self):
         if self.record_mindwave_data == True:
             self.record_mindwave_data = False
             self.recordbutton.config(image=self.RECORD)
             self.start_pause_button.config(state='active')
-
-            with open(self.export_file_temp_log, 'r') as filein:
-                output_row = ['']*len(self.file_format_seq)
-                for line in filein:
-                    
-                    if 'rawEeg' in line and 'raweeg' in self.file_format_seq:
-                            output_row[self.file_format['raweeg']] = output_row[self.file_format['raweeg']] + str(get_raweeg(line)) + ','
-                            continue
-                            
-                    if 'attention' in line and 'esenseat' in self.file_format_seq:
-                            output_row[self.file_format['esenseat']] = str(get_attention(line))
-                        
-                    if 'meditation' in line and 'esensemed' in self.file_format_seq:
-                            output_row[self.file_format['esensemed']] = str(get_meditation(line))
-                        
-                    if 'eegPower' in line:
-
-                        value = 0
-                        if self.gen_at_opt.get() == self.gen_at_opts[0]: # ['Theta/highBeta','Theta/lowBeta','None']
-                            value = round(get_theta(line)/get_high_beta(line),2)
-                        elif self.gen_at_opt.get() == self.gen_at_opts[1]:
-                            value = round(get_theta(line)/get_low_beta(line),2)
-                        output_row[self.file_format['genat']] = str(value)
-                        
-                        value = 0
-                        if self.gen_med_opt.get() == self.gen_med_opts[0]: # ['highAlpha','lowAlpha','None]
-                            value = get_high_alpha(line)
-                        elif self.gen_med_opt.get() == self.gen_med_opts[1]:
-                            value = get_low_alpha(line)
-                        output_row[self.file_format['genmed']] = str(value)
-
-                        if 'delta' in self.file_format_seq: output_row[self.file_format['delta']] = str(get_delta(line))
-                        if 'theta' in self.file_format_seq: output_row[self.file_format['theta']] = str(get_theta(line))
-                        if 'lowalpha' in self.file_format_seq: output_row[self.file_format['lowalpha']] = str(get_low_alpha(line))
-                        if 'highalpha' in self.file_format_seq: output_row[self.file_format['highalpha']] = str(get_high_alpha(line))
-                        if 'lowbeta' in self.file_format_seq: output_row[self.file_format['lowbeta']] = str(get_low_beta(line))
-                        if 'highbeta' in self.file_format_seq: output_row[self.file_format['highbeta']] = str(get_high_beta(line))
-                        if 'lowgamma' in self.file_format_seq: output_row[self.file_format['lowgamma']] = str(get_low_gamma(line))
-                        if 'highgamma' in self.file_format_seq: output_row[self.file_format['highgamma']] = str(get_high_gamma(line))
-
-                        with open(self.export_file, 'a') as fileout:
-                            fileout.write(str(self.sep).join(output_row) + '\n')
-                            output_row = ['']*len(self.file_format_seq)
-                            
+            self.save_formatted_export_file()
         else:
             filename_tokens = []
             for key, value in get_logger_filename().items():
@@ -277,7 +282,6 @@ class MonitoringWindow(Toplevel):
             self.start_pause_button.config(state='disabled')
 
     def init_values(self) -> None:
-        ##### DEV: eeg size -> 100 to 1500
         self.raw_eeg_data = SafeList(1500)
         self.attention_esense = SafeList(self.win_range.get())
         self.meditation_esense = SafeList(self.win_range.get())
@@ -318,7 +322,6 @@ class MonitoringWindow(Toplevel):
         ax.axes.yaxis.set_visible(visible)
 
     def set_charts_states(self, visible):
-        #self.ax_raw.axis('off')
         self.chart_axis_visible(self.ax_raw, visible)
         self.ax_raw.cla()
         self.chart_axis_visible(self.ax_eeg_power, visible)
@@ -333,10 +336,6 @@ class MonitoringWindow(Toplevel):
         self.ax_esense_med_bar.cla()
         self.chart_axis_visible(self.ax_blink, visible)
         self.ax_blink.cla()
-        #self.chart_axis_visible(self.ax_esense_at_value, visible)
-        #self.ax_esense_at_value.cla()
-        #self.chart_axis_visible(self.ax_esense_med_value, visible)
-        #self.ax_esense_med_value.cla()
         self.chart_axis_visible(self.ax_gen_at_line, visible)
         self.ax_gen_at_line.cla()
         self.chart_axis_visible(self.ax_gen_med_line, visible)
@@ -457,16 +456,10 @@ class MonitoringWindow(Toplevel):
         gspec_esat = GridSpecFromSubplotSpec(1, 2, subplot_spec=grid[0:3,1], wspace=0.03, width_ratios=[1,6])
         self.ax_esense_at_line = fig.add_subplot(gspec_esat[0,1])
         self.ax_esense_at_bar = fig.add_subplot(gspec_esat[0,0])
-        #self.ax_esense_at_line = fig.add_subplot(grid[0:3,9:13])
-        #self.ax_esense_at_bar = fig.add_subplot(grid[1:3,8])
-        #self.ax_esense_at_value = fig.add_subplot(grid[0,8])
         
         gspec_esmed = GridSpecFromSubplotSpec(1, 2, subplot_spec=grid[3:6,1], wspace=0.03, width_ratios=[1,6])
         self.ax_esense_med_line = fig.add_subplot(gspec_esmed[0,1])
         self.ax_esense_med_bar = fig.add_subplot(gspec_esmed[0,0])
-        #self.ax_esense_med_line = fig.add_subplot(grid[3:6,8:12])
-        #self.ax_esense_med_bar = fig.add_subplot(grid[3,13])
-        #self.ax_esense_med_value = fig.add_subplot(grid[3,12])
 
         self.ax_blink = fig.add_subplot(grid[-1,1:3])
         
@@ -584,11 +577,8 @@ class MonitoringWindow(Toplevel):
             # blink
             if len(self.raw_eeg_data.get()) > 0:
                 self.ax_blink.cla()
-                #self.ax_blink.axes.xaxis.set_visible(False)
-                #self.ax_blink.axes.yaxis.set_visible(False)
                 self.ax_blink.set_title('Blink Detection')
                 self.ax_blink.tick_params(labelsize=8)
-                #self.ax_blink.set_xlim(self.blinks.length()-len(self.blinks.get()), self.blinks.length())
                 self.ax_blink.set_ylim(-5,256)
                 
                 self.ax_blink.plot(self.blinks.get_times(), self.blinks.get(), lw=2, color='black')
@@ -605,7 +595,6 @@ class MonitoringWindow(Toplevel):
                 self.ax_eeg_power.set_title('EEG Power Bands')
                 bar = self.ax_eeg_power.bar(*zip(*self.eeg_power.items()), color='black')
                 self.ax_eeg_power.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-                #self.ax_eeg_power.set_xticklabels(self.eeg_power_labels)
                 self.ax_eeg_power.xaxis.set_major_locator(FixedLocator([0,1,2,3,4,5,6,7]))
                 self.ax_eeg_power.xaxis.set_major_formatter(FixedFormatter(self.eeg_power_labels))
                 self.ax_eeg_power.bar_label(bar, labels=['δ','θ','α','Α','β','Β','γ','Γ'])
@@ -643,46 +632,6 @@ class MonitoringWindow(Toplevel):
                 try: curr_med = self.meditation_esense.get()[-1]
                 except Exception: curr_med = 0
                 self.ax_esense_med_bar.set_title(curr_med, color='blue', size=32)
-
-            # attention value
-            #self.ax_esense_at_value.cla()
-            #self.ax_esense_at_value.axes.xaxis.set_visible(False)
-            #self.ax_esense_at_value.axes.yaxis.set_visible(False)
-            #self.ax_esense_at_value.spines['top'].set_visible(False)
-            #self.ax_esense_at_value.spines['right'].set_visible(False)
-            #self.ax_esense_at_value.spines['bottom'].set_visible(False)
-            #self.ax_esense_at_value.spines['left'].set_visible(False)
-            #self.ax_esense_at_value.set_facecolor('white')
-            #if len(self.attention_esense.get()) > 0:
-            #    try: curr_at = self.attention_esense.get()[-1]
-            #    except Exception: curr_at = 0
-            #    self.ax_esense_at_value.text(0, 0, curr_at, color='red', size=38)
-            #    self.ax_esense_at_value.set_ylim(0,50)
-            #    self.ax_esense_at_value.set_xlim(0,20)
-            #else:
-            #    self.ax_esense_at_value.text(0, 0, '-', color='black', size=38)
-
-            # meditation value
-            #self.ax_esense_med_value.cla()
-            #self.ax_esense_med_value.axes.xaxis.set_visible(False)
-            #self.ax_esense_med_value.axes.yaxis.set_visible(False)
-            #self.ax_esense_med_value.spines['top'].set_visible(False)
-            #self.ax_esense_med_value.spines['right'].set_visible(False)
-            #self.ax_esense_med_value.spines['bottom'].set_visible(False)
-            #self.ax_esense_med_value.spines['left'].set_visible(False)
-            #self.ax_esense_med_value.set_facecolor('white')
-            #if len(self.meditation_esense.get()) > 0:
-            #    try: curr_med = self.meditation_esense.get()[-1]
-            #    except Exception: curr_med = 0
-            #    self.ax_esense_med_value.text(0, 0, curr_med, color='blue', size=38)
-            #    self.ax_esense_med_value.set_ylim(0,50)
-            #    self.ax_esense_med_value.set_xlim(0,20)
-            #else:
-            #    self.ax_esense_med_value.text(0, 0, '-', color='black', size=38)
-        
-        #def handle_close():
-        #    self.read_mindwave_data = False
-        #    self.destroy()
 
         # TOP FRAME
         topframe = Frame(self, padx=70, pady=20, bg='white')
