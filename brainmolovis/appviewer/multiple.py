@@ -1,7 +1,7 @@
 from tkinter import Button, Label, Toplevel, Frame, font, IntVar, StringVar, Entry, messagebox
-from seaborn import lineplot, boxplot
-from numpy import arange
-from pandas import concat
+from seaborn import lineplot, boxplot, heatmap
+from numpy import arange, array
+from pandas import concat, DataFrame
 
 from brainmolovis.apputils.mindwavedata import *
 from brainmolovis.appviewer.datavis import VisualizationWindow
@@ -62,12 +62,24 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
     def esense_attention_history(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        lineplot(data=self.df, x='seq', y='esenseat', hue='tag', ax=ax)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.set_xlabel('Samples')
-        ax.set_ylabel('eSense Attention')
-        ax.set_title('eSense Attention History')
 
+        values = {}
+        longer = self.df['tag'].value_counts().index[0]
+        for tag in self.df['tag'].unique():
+            values[tag] = self.df[self.df['tag'] == tag]['esenseat'].to_list()
+            
+            if tag != longer: values[tag].extend([-1]* (len(self.df[self.df['tag'] == longer].index) - len(self.df[self.df['tag'] == tag].index)) )
+        
+        data = DataFrame.from_dict(values).transpose()
+        mask = array([[True if x < 0 else False for x in line] for line in data.to_numpy()])
+
+        heatmap(data, cmap='Spectral_r', ax=ax, mask=mask,
+            yticklabels=True, xticklabels=False,
+            cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+        
+        ax.set_title('eSense Attention Heatmap')
+        ax.set_xlabel('Samples')
+        ax.set_ylabel('Files')
         self.canvas.draw()
 
     def esense_attention_variation(self) -> None:
