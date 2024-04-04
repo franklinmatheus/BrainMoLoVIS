@@ -1,6 +1,6 @@
 from tkinter import Button, Label, Toplevel, Frame, font, IntVar, StringVar, Entry, messagebox
 from seaborn import lineplot, boxplot, heatmap
-from numpy import arange, array
+from numpy import arange, array, corrcoef
 from pandas import concat, DataFrame
 
 from brainmolovis.apputils.mindwavedata import *
@@ -146,9 +146,6 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
 
         self.canvas.draw()
 
-    def generated_attention_history(self) -> None:
-        pass
-
     def generated_meditation_variation(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
@@ -161,14 +158,45 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
 
         self.canvas.draw()
 
-    def generated_meditation_history(self) -> None:
-        pass
+    def attention_correlation(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        vars = []
+        corr = []
+        for tag in self.df['tag'].unique():
+            corr.append(
+                corrcoef(self.df[self.df['tag'] == tag]['esenseat'].to_list(),
+                         self.df[self.df['tag'] == tag][self.genat_type].to_list())[0][1]
+            )
 
-    def esense_attention_correlation(self) -> None:
-        pass
+            vars.append(tag)
 
-    def esense_meditation_correlation(self) -> None:
-        pass
+        heatmap([corr], cmap='Spectral_r', ax=ax, annot=True, vmin=-1, vmax=1,
+                    yticklabels=False, xticklabels=vars)
+        ax.set_title('eSense Attention and ' + self.genat_type.split('_')[1] + ' Pearson Correlation')
+        ax.set_xlabel('Correlations')
+
+        self.canvas.draw()
+
+    def meditation_correlation(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        vars = []
+        corr = []
+        for tag in self.df['tag'].unique():
+            corr.append(
+                corrcoef(self.df[self.df['tag'] == tag]['esensemed'].to_list(),
+                         self.df[self.df['tag'] == tag][self.genmed_type].to_list())[0][1]
+            )
+
+            vars.append(tag)
+
+        heatmap([corr], cmap='Spectral_r', ax=ax, annot=True, vmin=-1, vmax=1,
+                    yticklabels=False, xticklabels=vars)
+        ax.set_title('eSense Meditation and ' + self.genmed_type.split('_')[1] + ' Pearson Correlation')
+        ax.set_xlabel('Correlations')
+
+        self.canvas.draw()
 
     def generated_attention_correlation(self) -> None:
         pass
@@ -214,13 +242,9 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
         self.create_singledatavis_opt('eSense Meditation Variation', self.esense_meditation_variation)
 
         if self.genat_type != 'None':
-            self.create_singledatavis_opt('Generated Attention History', self.generated_attention_history)
             self.create_singledatavis_opt('Generated Attention Variation', self.generated_attention_variation)
         if self.genmed_type != 'None':
-            self.create_singledatavis_opt('Generated Meditation History', self.generated_meditation_history)
             self.create_singledatavis_opt('Generated Meditation Variation', self.generated_meditation_variation)
 
-        self.create_multipledatavis_opt('eSense Attention Correlation', self.esense_attention_correlation)
-        self.create_multipledatavis_opt('eSense Meditation Correlation', self.esense_meditation_correlation)
-        self.create_multipledatavis_opt('Generated Attention Correlation', self.generated_attention_correlation)
-        self.create_multipledatavis_opt('Generated Meditation Correlation', self.generated_meditation_correlation)
+        self.create_multipledatavis_opt('eSense and Generated Attention Correlation', self.attention_correlation)
+        self.create_multipledatavis_opt('eSense and Generated Meditation Correlation', self.meditation_correlation)
