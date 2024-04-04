@@ -59,10 +59,13 @@ class SetFilesTagsWindow(Toplevel):
 
 class MultipleFilesVisualizationWindow(VisualizationWindow):
 
+    def get_mask(self, data):
+        return array([[True if x < 0 else False for x in line] for line in data.to_numpy()])
+
     def esense_attention_history(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-
+        
         values = {}
         longer = self.df['tag'].value_counts().index[0]
         for tag in self.df['tag'].unique():
@@ -71,9 +74,9 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
             if tag != longer: values[tag].extend([-1]* (len(self.df[self.df['tag'] == longer].index) - len(self.df[self.df['tag'] == tag].index)) )
         
         data = DataFrame.from_dict(values).transpose()
-        mask = array([[True if x < 0 else False for x in line] for line in data.to_numpy()])
+        mask = self.get_mask(data)
 
-        heatmap(data, cmap='Spectral_r', ax=ax, mask=mask,
+        heatmap(data, cmap='YlOrBr', ax=ax, mask=mask,
             yticklabels=True, xticklabels=False,
             cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
         
@@ -97,12 +100,24 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
     def esense_meditation_history(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        lineplot(data=self.df, x='seq', y='esensemed', hue='tag', ax=ax)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.set_xlabel('Samples')
-        ax.set_ylabel('eSense Meditation')
-        ax.set_title('eSense Meditation History')
+        
+        values = {}
+        longer = self.df['tag'].value_counts().index[0]
+        for tag in self.df['tag'].unique():
+            values[tag] = self.df[self.df['tag'] == tag]['esensemed'].to_list()
+            
+            if tag != longer: values[tag].extend([-1]* (len(self.df[self.df['tag'] == longer].index) - len(self.df[self.df['tag'] == tag].index)) )
+        
+        data = DataFrame.from_dict(values).transpose()
+        mask = mask = self.get_mask(data)
 
+        heatmap(data, cmap='Blues', ax=ax, mask=mask,
+            yticklabels=True, xticklabels=False,
+            cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+        
+        ax.set_title('eSense Meditation Heatmap')
+        ax.set_xlabel('Samples')
+        ax.set_ylabel('Files')
         self.canvas.draw()
 
     def esense_meditation_variation(self) -> None:
