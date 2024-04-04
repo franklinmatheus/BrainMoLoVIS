@@ -6,7 +6,7 @@ from tkinter.ttk import Style
 from tkinter.filedialog import askopenfilename, askdirectory
 
 from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY, DARK_GREY, BLUE1
-from brainmolovis.appmonitor.monitor import MonitoringWindow
+from brainmolovis.appmonitor.monitor import MonitoringWindow, InputSessionSubjectWindow
 from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
 from brainmolovis.appviewer.datavis import SingleFileVisualizationWindow, MultipleFilesVisualizationWindow, SetFilesTagsWindow
 from brainmolovis.appconfig.config import load_config
@@ -15,8 +15,16 @@ from brainmolovis.applogger.load import load_dataframe, load_folder_dataframes
 class App(Tk):    
 
     def monitoring_window(self) -> None:
-        self.monitoringwindow = MonitoringWindow(self)
-        self.monitoringwindow.grab_set()
+        inputsubject = InputSessionSubjectWindow(self, '', '')
+        inputsubject.grab_set()
+        self.wait_variable(inputsubject.get_inputed())
+        
+        if inputsubject.get_inputed().get() == 1:
+            subjectid = inputsubject.get_subjectid()
+            sessionid = inputsubject.get_sessionid()
+
+            self.monitoringwindow = MonitoringWindow(self, subjectid, sessionid)
+            self.monitoringwindow.grab_set()
 
     def visualization_single_window(self) -> None:
         if self.datafilename != '':

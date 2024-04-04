@@ -131,5 +131,10 @@ dmypy.json
 # Trash
 sample/
 data/
+bmlvis-application/
+bmlvis/
+server/
 *_local.py
 *_local.csv
+bmlvis.zip
+*.ipynb

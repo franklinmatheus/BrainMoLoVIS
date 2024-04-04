@@ -1,8 +1,9 @@
-from tkinter import Button, Entry, Label, StringVar, BooleanVar, Toplevel, messagebox, Frame, font
+from tkinter import Button, Entry, Label, BooleanVar, StringVar, IntVar, Toplevel, messagebox, Frame, font
 
 from brainmolovis.appconfig.config import is_session_required
 from brainmolovis.apputils.common import DARK_GREY
 
+# no more necessary
 class InputSubjectWindow(Toplevel):
 
     def get_inputed(self): return self.__inputed
@@ -43,26 +44,28 @@ class InputSessionSubjectWindow(Toplevel):
     def get_subjectid(self): return self.__subject_str.get()
     def get_sessionid(self): return self.__session_str.get()
 
-    def process_input(self):
+    def process_input(self, event=None):
         if self.__subject_str.get() != '':
-            if self.__session_str.get() == '' and is_session_required():
-                messagebox.showinfo('Error', 'You need to input a Session ID as it is being used in the export filename.', parent=self)
-            else:
-                self.__inputed.set(True)
-                self.destroy()
+            if self.__session_str.get() == '': self.__session_str.set('Single Session')
+            self.__inputed.set(1)
+            self.destroy()
         else:
             messagebox.showinfo('Error', 'Please, input a valid subject ID!', parent=self)
+
+    def process_close(self):
+        self.__inputed.set(2)
+        self.destroy()
 
     def __init__(self, parent, __subject_str, __session_str) -> None:
         super().__init__(parent)
 
         self.title('Metadata')
-        self.geometry('320x200')
+        #self.geometry('320x200')
         self.resizable(False, False)
         self.config(padx=10, pady=10)
-        self.protocol('WM_DELETE_WINDOW', self.process_input)
+        self.protocol('WM_DELETE_WINDOW', self.process_close)
 
-        self.__inputed = BooleanVar(value=False)
+        self.__inputed = IntVar(value=0)
         self.__subject_str = StringVar(self)
         self.__session_str = StringVar(self)
         
@@ -70,18 +73,22 @@ class InputSessionSubjectWindow(Toplevel):
 
         inputsgrid = Frame(self)
         inputsgrid.grid_columnconfigure(1, weight=1)
-        Label(inputsgrid, text='Subject ID (*)').grid(row=0, column=0, pady=0)
+        Label(inputsgrid, text='Subject ID').grid(row=0, column=0, pady=0, padx=(0,5))
         input = Entry(inputsgrid, textvariable=self.__subject_str, border=1)
+        input.focus()
         input.insert(0, __subject_str)
         input.grid(row=0, column=1, pady=0, sticky='ew')
         Label(inputsgrid, text='(e.g., Franklin, user01, Subject 10, etc.)', font=("Arial", 8), fg=DARK_GREY).grid(row=1, column=1, pady=(0,10), sticky='w')
 
-        title_ses = 'Session ID (*)' if is_session_required() else 'Session ID'
-        Label(inputsgrid, text=title_ses).grid(row=2, column=0, pady=0)
+        #title_ses = 'Session ID (*)' if is_session_required() else 'Session ID'
+        Label(inputsgrid, text='Session ID').grid(row=2, column=0, pady=0, padx=(0,5))
         input = Entry(inputsgrid, textvariable=self.__session_str, border=1)
         input.insert(0, __session_str)
         input.grid(row=2, column=1, sticky='ew', pady=0)
         Label(inputsgrid, text='(e.g., Session 1/4, Single Session, etc.)', font=("Arial", 8), fg=DARK_GREY).grid(row=3, column=1, sticky='w')
-        inputsgrid.pack(fill='x', anchor='center')
+        Label(inputsgrid, text='Default: Single Session', font=("Arial", 8), fg=DARK_GREY).grid(row=4, column=1, sticky='w')
+        inputsgrid.pack(fill='x', anchor='center', pady=(0, 10))
 
-        Button(self, text='Ok', command=self.process_input).pack(anchor='center', side='bottom')
+        self.confirm = Button(self, text='Ok', command=self.process_input)
+        self.confirm.pack(anchor='center', side='bottom')
+        self.confirm.bind('<Return>', lambda x: self.process_input(self))

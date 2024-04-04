@@ -1,11 +1,11 @@
 {
-    "export_path": "C:\\Users\\frank\\Documents\\UFRN\\PPGSC\\Semestres\\3\\TOPICOS\\mindwave\\BrainMoLoVIS",
+    "export_path": "C:/Users/frank/Documents/UFRN/PPGSC/Mestrado/Dissertacao/Valida\u00e7\u00e3o alternativa/Dados/Zen Cat",
     "logger_file": {
         "filename": {
             "subject": 0,
-            "session": -1,
-            "date": 1,
-            "time": 2
+            "session": 1,
+            "date": 2,
+            "time": 3
         },
         "sep": ";",
         "content": {
@@ -28,7 +28,7 @@
         "average": 1,
         "esenseat": 1,
         "esensemed": 1,
-        "genat": "Theta/High Beta",
+        "genat": "Theta/Low Beta",
         "genmed": "High Alpha",
         "range": 30
     }

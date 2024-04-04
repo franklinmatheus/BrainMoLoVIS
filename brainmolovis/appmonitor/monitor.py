@@ -3,7 +3,7 @@ from threading import Thread
 from time import strftime, sleep
 from datetime import datetime
 from os import remove
-from tkinter import Button, IntVar, StringVar, Label, PhotoImage, Toplevel, messagebox, Frame, font, Checkbutton, Radiobutton
+from tkinter import Button, IntVar, StringVar, Label, PhotoImage, Toplevel, messagebox, Frame, font, Checkbutton
 from tkinter.ttk import Separator, Combobox
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -15,7 +15,6 @@ from seaborn import set_theme
 import numpy as np
 from idlelib.tooltip import Hovertip
 
-from brainmolovis.apputils.common import LIGHT_GREY, LIGHT_GREY
 from brainmolovis.apputils.safelist import SafeList, SafeListTime
 from brainmolovis.appconfig.subject import InputSessionSubjectWindow
 from brainmolovis.appconfig.config import *
@@ -101,7 +100,7 @@ class MonitoringWindow(Toplevel):
                         with open(self.export_file_temp_log, 'a') as file: 
                             file.write(packet)
 
-    def stream_from_file(self) -> None:        
+    def stream_from_file(self) -> None:
         with open('streamdata_local.csv', 'r') as file:
             delaycontrol = 0
             blinkcontrol = 0
@@ -172,7 +171,7 @@ class MonitoringWindow(Toplevel):
                             self.signal = get_signal_level(packet)
                             self.headset_quality_signal()
 
-    def start_pause_monitoring(self) -> None:
+    def start_pause_monitoring(self, event=None) -> None:
         if self.read_mindwave_data == True:
             self.read_mindwave_data = False
             self.start_pause_button.config(text='Start', image=self.START)
@@ -225,9 +224,11 @@ class MonitoringWindow(Toplevel):
 
                     value = 0
                     if self.gen_at_opt.get() == self.gen_at_opts[0]: # ['Theta/highBeta','Theta/lowBeta','None']
-                        value = round(get_theta(line)/get_high_beta(line),2)
+                        try: value = round(get_theta(line)/get_high_beta(line),2)
+                        except ZeroDivisionError: value = 0
                     elif self.gen_at_opt.get() == self.gen_at_opts[1]:
-                        value = round(get_theta(line)/get_low_beta(line),2)
+                        try: value = round(get_theta(line)/get_low_beta(line),2)
+                        except ZeroDivisionError: value = 0
                     output_row[self.file_format['genat']] = str(value)
                     
                     value = 0
@@ -252,10 +253,12 @@ class MonitoringWindow(Toplevel):
 
         remove(self.export_file_temp_log)
 
-    def start_pause_recording(self):
+    def start_pause_recording(self, event=None):
+        if self.read_mindwave_data == False: return
         if self.record_mindwave_data == True:
             self.record_mindwave_data = False
             self.recordbutton.config(image=self.RECORD)
+            self.rec_label.config(text='', image='')
             self.start_pause_button.config(state='active')
             self.save_formatted_export_file()
         else:
@@ -279,6 +282,7 @@ class MonitoringWindow(Toplevel):
 
             self.record_mindwave_data = True
             self.recordbutton.config(image=self.STOP)
+            self.rec_label.config(text='REC', image=self.RECORD, compound='left')
             self.start_pause_button.config(state='disabled')
 
     def init_values(self) -> None:
@@ -292,7 +296,7 @@ class MonitoringWindow(Toplevel):
         self.eeg_power = {'delta': 0, 'theta': 0, 'lowAlpha': 0, 'highAlpha': 0, 'lowBeta': 0, 'highBeta': 0, 'lowGamma': 0, 'highGamma': 0}
         self.eeg_power_labels = ['Delta\n1-3Hz','Theta\n4-7Hz','Low Alpha\n8-9Hz','High Alpha\n10-12Hz','Low Beta\n13-17Hz','High Beta\n18-30Hz','Low Gamma\n31-40Hz','High Gamma\n41-50Hz']
 
-    def subject_session_config(self):
+    def subject_session_config(self, event=None):
         inputsubject = InputSessionSubjectWindow(self, self.subjectid, self.sessionid)
         inputsubject.grab_set()
         self.wait_variable(inputsubject.get_inputed())
@@ -312,7 +316,7 @@ class MonitoringWindow(Toplevel):
             self.subjectid = inputsubject.get_subjectid()
             self.sessionid = inputsubject.get_sessionid()
 
-    def reset_monitoring_data(self) -> None:
+    def reset_monitoring_data(self, event=None) -> None:
         if self.read_mindwave_data == False:
             self.set_charts_states(False)
             self.init_values()
@@ -389,13 +393,17 @@ class MonitoringWindow(Toplevel):
 
         self.after(100, self.destroy)
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, subjectid, sessionid) -> None:
         super().__init__(parent)
 
-        self.title('Brain Monitor')
+        self.title('Monitor Module')
         self.iconbitmap('./icon/favicon.ico')
-        self.attributes('-fullscreen',True)
-        
+        #self.attributes('-fullscreen',True)
+        self.state('zoomed')
+        #w, h = self.winfo_screenwidth(), self.winfo_screenheight()
+        #self.geometry("%dx%d+0+0" % (w, h))
+        #self.resizable(False, False)
+
         self.export_path = get_export_path()
         self.file_format_seq, self.file_format, self.sep = get_logger_file_content_reduced()
         
@@ -423,9 +431,10 @@ class MonitoringWindow(Toplevel):
         
         self.reseted = True
 
-        self.subjectid = ''
-        self.sessionid = ''
-        self.subject_session_config()
+        self.subjectid = subjectid
+        self.sessionid = sessionid
+
+        #self.subject_session_config()
         self.init_values()
         set_theme()
 
@@ -443,7 +452,7 @@ class MonitoringWindow(Toplevel):
         self.SCAN = PhotoImage(file = r"./imgs/scan.png")
         
         fig = Figure()
-        fig.subplots_adjust(bottom=0.10, top=0.96, left=0.04, right=0.96, hspace=2, wspace=0.1)
+        fig.subplots_adjust(bottom=0.10, top=0.94, left=0.06, right=0.96, hspace=2, wspace=0.1)
         
         grid = fig.add_gridspec(7, 3)
         grid.tight_layout(figure=fig)
@@ -593,7 +602,7 @@ class MonitoringWindow(Toplevel):
                 self.ax_eeg_power.cla()
                 self.ax_eeg_power.tick_params(labelsize=8)
                 self.ax_eeg_power.set_title('EEG Power Bands')
-                bar = self.ax_eeg_power.bar(*zip(*self.eeg_power.items()), color='black')
+                bar = self.ax_eeg_power.bar(*zip(*self.eeg_power.items()), color='black', alpha=0.75)
                 self.ax_eeg_power.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
                 self.ax_eeg_power.xaxis.set_major_locator(FixedLocator([0,1,2,3,4,5,6,7]))
                 self.ax_eeg_power.xaxis.set_major_formatter(FixedFormatter(self.eeg_power_labels))
@@ -644,7 +653,10 @@ class MonitoringWindow(Toplevel):
         self.sub_ses_id_title_label.pack(side='left', padx=5)
         self.sub_ses_id_value_label = Label(topframe, text=value_sub_ses, bg='white', fg='black', font=("Arial", 20, font.BOLD))
         self.sub_ses_id_value_label.pack(side='left')
-        
+
+        self.rec_label = Label(topframe, text='', bg='white', fg='red')
+        self.rec_label.pack(side='left')
+
         self.clock = Label(topframe, bg='white', font=("Arial", 20))
         self.clock.pack(side='right')
         self.clock_time()
@@ -720,3 +732,8 @@ class MonitoringWindow(Toplevel):
         self.signallabel = Label(botframe, image=self.CONN0)
         self.signallabel.pack(side='right', padx=5)
         Hovertip(self.signallabel, 'The current signal quality from the headset.')
+
+        self.bind('<space>', lambda x: self.start_pause_monitoring(self))
+        self.bind('<Control-r>', lambda x: self.start_pause_recording(self))
+        self.bind('<Control-e>', lambda x: self.subject_session_config(self))
+        self.bind('<Control-d>', lambda x: self.reset_monitoring_data(self))
