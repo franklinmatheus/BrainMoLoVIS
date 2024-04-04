@@ -89,7 +89,7 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         boxplot(data=self.df, y='esenseat', x='tag', ax=ax, linewidth=1,
-                medianprops=dict(color='r', linewidth=2),
+                medianprops=dict(color='#750101', linewidth=2),
                 boxprops=dict(facecolor='#ff8f87', edgecolor='black'))
         ax.set_xlabel('Files')
         ax.set_ylabel('eSense Attention')
@@ -123,12 +123,14 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
     def esense_meditation_variation(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        boxplot(data=self.df, y='esensemed', x='tag', hue='tag', ax=ax, dodge=False)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.set_xticklabels([])
+        boxplot(data=self.df, y='esensemed', x='tag', ax=ax, linewidth=1,
+                medianprops=dict(color='#012775', linewidth=2),
+                boxprops=dict(facecolor='#678ee0', edgecolor='black'))
         ax.set_xlabel('Files')
         ax.set_ylabel('eSense Meditation')
         ax.set_title('eSense Meditation Variation')
+
+        self.canvas.draw()
 
         self.canvas.draw()
 
