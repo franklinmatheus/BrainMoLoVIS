@@ -8,7 +8,8 @@ from tkinter.filedialog import askopenfilename, askdirectory
 from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LIGHT_GREY, GREY, DARK_GREY, BLUE1
 from brainmolovis.appmonitor.monitor import MonitoringWindow, InputSessionSubjectWindow
 from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
-from brainmolovis.appviewer.datavis import SingleFileVisualizationWindow, MultipleFilesVisualizationWindow, SetFilesTagsWindow
+from brainmolovis.appviewer.single import SingleFileVisualizationWindow
+from brainmolovis.appviewer.multiple import MultipleFilesVisualizationWindow, SetFilesTagsWindow
 from brainmolovis.appconfig.config import load_config
 from brainmolovis.applogger.load import load_dataframe, load_folder_dataframes
 
