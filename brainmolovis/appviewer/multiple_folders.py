@@ -1,5 +1,5 @@
 from tkinter import Button, Label, Toplevel, Frame, font, IntVar, StringVar, IntVar, Entry, messagebox
-from seaborn import lineplot, boxplot, heatmap, swarmplot, regplot
+from seaborn import lineplot, boxplot, heatmap, swarmplot, regplot, stripplot, scatterplot
 from numpy import arange, array, corrcoef
 from pandas import concat, DataFrame
 
@@ -70,6 +70,34 @@ class SetFolderTagWindow(Toplevel):
 
 class MultipleFoldersVisualizationWindow(VisualizationWindow):
 
+    def esense_attention_boxplot(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+
+        boxplot(data=self.df, y='esenseat', x='tag', ax=ax, linewidth=1,
+                medianprops=dict(color='#750101', linewidth=2),
+                boxprops=dict(facecolor='#ff8f87', edgecolor='black'))
+
+        ax.set_xlabel('Folders')
+        ax.set_ylabel('eSense Attention')
+        ax.set_title('eSense Attention Variation')
+
+        self.canvas.draw()
+
+    def esense_meditation_boxplot(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+
+        boxplot(data=self.df, y='esensemed', x='tag', ax=ax, linewidth=1,
+                medianprops=dict(color='#012775', linewidth=2),
+                boxprops=dict(facecolor='#678ee0', edgecolor='black'))
+
+        ax.set_xlabel('Folders')
+        ax.set_ylabel('eSense Meditation')
+        ax.set_title('eSense Attention Meditation')
+
+        self.canvas.draw()
+
     def __init__(self, parent, dfs, folders, tags) -> None:
         super().__init__(parent)
         self.title('Visualization Module [Multiple Folders]')
@@ -95,5 +123,8 @@ class MultipleFoldersVisualizationWindow(VisualizationWindow):
                 elif self.genmed_type == 'None': pass
                 elif self.genmed_type != gens['genmed']: self.genmed_type = 'None'
             else: self.genmed_type = 'None'
+        
+        self.create_singledatavis_opt('eSense Attention Boxplot', self.esense_attention_boxplot)
+        self.create_singledatavis_opt('eSense Attention Scatterplot', self.esense_attention_scatterplot)
         
         self.df = concat(dfs, ignore_index=True)

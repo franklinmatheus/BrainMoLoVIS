@@ -3,6 +3,7 @@ from os.path import basename, isdir, join
 from os import listdir
 from numpy import arange
 from pandas import concat
+from re import findall
 import socket
 from tkinter import Button, Frame, IntVar, Label, Menu, Tk, font, messagebox, PhotoImage
 from tkinter.ttk import Style
@@ -63,6 +64,7 @@ class App(Tk):
     def visualization_multiple_folders_window(self) -> None:
         if self.multiplefolder_dir != '':
             folder_names = [name for name in listdir(self.multiplefolder_dir) if isdir(join(self.multiplefolder_dir, name))]
+            folder_names.sort(key=lambda test_string : list(map(int, findall(r'\d+', test_string)))[0])
             
             if len(folder_names) == 1: 
                 messagebox.showinfo('Error', 'Unable to open the multiple folder viewer with a unique folder.', parent=self)
