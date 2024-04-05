@@ -1,5 +1,6 @@
 from seaborn import lineplot, heatmap, regplot, histplot
-from numpy import arange
+from numpy import arange, corrcoef
+from pandas import DataFrame
 
 from brainmolovis.apputils.mindwavedata import *
 from brainmolovis.appviewer.datavis import VisualizationWindow
@@ -74,13 +75,24 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         ax.set_xlim(0,100)
         self.canvas.draw()
 
-    # Generates a visualization with a line plot to each power band (the plots appear stacked in the visualization)
-    def power_bands_line_plots(self) -> None:
-        pass
+    def esense_power_bands_correlation(self) -> None:
+        bands = ['delta','theta','lowalpha','highalpha','lowbeta','highbeta','lowgamma','highgamma']
 
-    # Generates the Power Spectral Density of the Raw EEG signal (usin FFT: fast fourier transform)
-    def psd_fft_raweeg(self) -> None:
-        pass
+        values = {}
+        for band in bands:
+            if band not in values: values[band] = []
+            values[band].append(corrcoef(self.df[band].to_list(), self.df['esenseat'].to_list())[0][1])
+            values[band].append(corrcoef(self.df[band].to_list(), self.df['esensemed'].to_list())[0][1])
+
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        heatmap(DataFrame.from_dict(values), cmap='rocket_r', ax=ax, annot=True)
+
+        ax.set_title('Power Bands Pearson Correlation Matrix')
+        ax.set_yticklabels(['eSense Attention', 'eSense Meditation'])
+        ax.set_xticklabels(bands)
+
+        self.canvas.draw()
 
     def power_bands_correlation(self) -> None:
         bands = ['delta','theta','lowalpha','highalpha','lowbeta','highbeta','lowgamma','highgamma']
@@ -120,10 +132,9 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         self.create_singledatavis_opt('eSense Attention Heatmap', self.esense_attention_history_heatmap)
         self.create_singledatavis_opt('eSense Meditation History', self.esense_meditation_history_line)
         self.create_singledatavis_opt('eSense Meditation Heatmap', self.esense_meditation_history_heatmap)
-        self.create_singledatavis_opt('eSense Attention Histogram', self.esense_attention_histogram) # TODO
-        self.create_singledatavis_opt('eSense Meditation Histogram', self.esense_meditation_histogram) # TODO
-        self.create_singledatavis_opt('Raw EEG Power Spectral Density (FFT)', self.psd_fft_raweeg) # TODO
+        self.create_singledatavis_opt('eSense Attention Histogram', self.esense_attention_histogram)
+        self.create_singledatavis_opt('eSense Meditation Histogram', self.esense_meditation_histogram)
         
-        self.create_multipledatavis_opt('Power Bands Line Plots', self.power_bands_line_plots) # TODO
+        self.create_multipledatavis_opt('eSense and Power Bands Correlation', self.esense_power_bands_correlation)
         self.create_multipledatavis_opt('Power Bands Pearson Correlation', self.power_bands_correlation)
         self.create_multipledatavis_opt('eSense Attention and Meditation History', self.esense_attention_meditation_history)
