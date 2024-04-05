@@ -129,11 +129,11 @@ class SingleFileVisualizationWindow(VisualizationWindow):
 
         self.df = df
 
-        self.create_singledatavis_opt('eSense Attention History', self.esense_attention_history_line)
+        self.create_singledatavis_opt('eSense Attention Lineplot', self.esense_attention_history_line)
         self.create_singledatavis_opt('eSense Attention Heatmap', self.esense_attention_history_heatmap)
-        self.create_singledatavis_opt('eSense Meditation History', self.esense_meditation_history_line)
-        self.create_singledatavis_opt('eSense Meditation Heatmap', self.esense_meditation_history_heatmap)
         self.create_singledatavis_opt('eSense Attention Histogram', self.esense_attention_histogram)
+        self.create_singledatavis_opt('eSense Meditation Lineplot', self.esense_meditation_history_line)
+        self.create_singledatavis_opt('eSense Meditation Heatmap', self.esense_meditation_history_heatmap)
         self.create_singledatavis_opt('eSense Meditation Histogram', self.esense_meditation_histogram)
         
         self.create_multipledatavis_opt('eSense and Power Bands Correlation', self.esense_power_bands_correlation)

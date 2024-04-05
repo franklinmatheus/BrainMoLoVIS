@@ -1,5 +1,8 @@
 from datetime import datetime
-from os.path import basename
+from os.path import basename, isdir, join
+from os import listdir
+from numpy import arange
+from pandas import concat
 import socket
 from tkinter import Button, Frame, IntVar, Label, Menu, Tk, font, messagebox, PhotoImage
 from tkinter.ttk import Style
@@ -9,7 +12,8 @@ from brainmolovis.apputils.common import CONNECTED, DISCONNECTED, GREEN, RED, LI
 from brainmolovis.appmonitor.monitor import MonitoringWindow, InputSessionSubjectWindow
 from brainmolovis.appconfig.export import ConfigExportPathWindow, ConfigLoggerFilenameWindow, ConfigLoggerFileContentWindow
 from brainmolovis.appviewer.single import SingleFileVisualizationWindow
-from brainmolovis.appviewer.multiple import MultipleFilesVisualizationWindow, SetFilesTagsWindow
+from brainmolovis.appviewer.multiple_files import MultipleFilesVisualizationWindow, SetFilesTagsWindow
+from brainmolovis.appviewer.multiple_folders import MultipleFoldersVisualizationWindow, SetFolderTagWindow
 from brainmolovis.appconfig.config import load_config
 from brainmolovis.applogger.load import load_dataframe, load_folder_dataframes
 
@@ -37,9 +41,10 @@ class App(Tk):
             else: messagebox.showinfo('Error', 'Unable to load the file. Check for unsupported variables or wrong structure of the file.', parent=self)
         else: messagebox.showinfo('Error', 'Please, inform a valid file!')
 
-    def visualization_multiple_window(self) -> None:
-        if self.foldername != '':
-            dfs, files, file_error = load_folder_dataframes(self.foldername)
+    def visualization_multiple_files_window(self) -> None:
+        if self.multiplefile_dir != '':
+            print(self.multiplefile_dir)
+            dfs, files, file_error = load_folder_dataframes(self.multiplefile_dir)
 
             if len(dfs) > 1:
                 inputtags = SetFilesTagsWindow(self, files)
@@ -53,6 +58,46 @@ class App(Tk):
                     self.visualizationwindow.grab_set()
             elif len(dfs) == 1: messagebox.showinfo('Error', 'Unable to open the multiple datafile viewer with a unique file.', parent=self)
             else: messagebox.showinfo('Error', 'Unable to load ' + file_error + ' correctly.', parent=self)
+        else: messagebox.showinfo('Error', 'Please, inform a valid directory!')
+
+    def visualization_multiple_folders_window(self) -> None:
+        if self.multiplefolder_dir != '':
+            folder_names = [name for name in listdir(self.multiplefolder_dir) if isdir(join(self.multiplefolder_dir, name))]
+            
+            if len(folder_names) == 1: 
+                messagebox.showinfo('Error', 'Unable to open the multiple folder viewer with a unique folder.', parent=self)
+                return
+            
+            dfs = []
+            tags = []
+
+            for folder_name in folder_names:
+                folder_dfs, files, file_error = load_folder_dataframes(join(self.multiplefolder_dir, folder_name))
+
+                if len(folder_dfs) > 1:
+                    inputtags = SetFolderTagWindow(self, folder_name, files)
+                    inputtags.grab_set()
+                    self.wait_variable(inputtags.get_inputed())
+
+                    if inputtags.get_inputed().get() == 1:
+                        ids = inputtags.get_ids()
+                        folder_tag = inputtags.get_folder_tag()
+                        
+                        for i in range(0,len(folder_dfs)): 
+                            folder_dfs[i]['ID'] = ids[i]
+                            folder_dfs[i]['seq'] = arange(0,len(folder_dfs[i].index),1)
+                        
+                        df = concat(folder_dfs, ignore_index=True)
+                        dfs.append(df)
+                        tags.append(folder_tag)
+
+                elif len(folder_dfs) == 1: 
+                    messagebox.showinfo('Error', 'Unable to open the multiple datafile viewer with a unique file.', parent=self)
+                else: messagebox.showinfo('Error', 'Unable to load ' + file_error + ' correctly.', parent=self)
+
+            self.visualizationwindow = MultipleFoldersVisualizationWindow(self, dfs, folder_names, tags)
+            self.visualizationwindow.grab_set()
+            
         else: messagebox.showinfo('Error', 'Please, inform a valid directory!')
 
     def logger_export_window(self) -> None:
@@ -71,9 +116,13 @@ class App(Tk):
         self.datafilename = askopenfilename()
         self.datafilevis.config(text=basename(self.datafilename))
 
-    def select_folder_vis(self) -> None:
-        self.foldername = askdirectory()
-        self.foldervis.config(text='.../' + basename(self.foldername))
+    def select_multiple_file_vis(self) -> None:
+        self.multiplefile_dir = askdirectory()
+        self.multiplefilevis.config(text='.../' + basename(self.multiplefile_dir))
+
+    def select_multiple_folder_vis(self) -> None:
+        self.multiplefolder_dir = askdirectory()
+        self.multiplefoldervis.config(text='.../' + basename(self.multiplefolder_dir))
 
     def registersession(self) -> None:
         if self.label_headset_status['text'] == DISCONNECTED:
@@ -133,7 +182,8 @@ class App(Tk):
         self.experience = IntVar()
         self.sessiondate = None
         self.datafilename = ''
-        self.foldername = ''
+        self.multiplefile_dir = ''
+        self.multiplefolder_dir = ''
 
         self.CSV = PhotoImage(file = r"./imgs/csv.png")
         self.FOLDER = PhotoImage(file = r"./imgs/folder.png")
@@ -211,10 +261,17 @@ class App(Tk):
 
         ### multiple files, i.e. folder
         Label(visframegrid, text='Multiple Datafiles', fg=DARK_GREY, font=("Arial", 10, font.BOLD)).grid(row=1, column=0, padx=(0,10), sticky='w')
-        self.foldervis = Label(visframegrid, font=("Arial", 8), text='Select a folder...', background=LIGHT_GREY)
-        self.foldervis.grid(row=1, column=1, sticky='ew', padx=(0,10))
-        Button(visframegrid, text='Choose file', image=self.FOLDER, command=self.select_folder_vis).grid(row=1, column=2, padx=(0,10))
-        Button(visframegrid, text='Open', command=self.visualization_multiple_window).grid(row=1, column=3)
+        self.multiplefilevis = Label(visframegrid, font=("Arial", 8), text='Select a folder...', background=LIGHT_GREY)
+        self.multiplefilevis.grid(row=1, column=1, sticky='ew', padx=(0,10), pady=(0,5))
+        Button(visframegrid, text='Choose folder', image=self.FOLDER, command=self.select_multiple_file_vis).grid(row=1, column=2, padx=(0,10), pady=(0,5))
+        Button(visframegrid, text='Open', command=self.visualization_multiple_files_window).grid(row=1, column=3, pady=(0,5))
+
+        ### multiple folders of files, i.e. folder
+        Label(visframegrid, text='Multiple Folders of Datafiles', fg=DARK_GREY, font=("Arial", 10, font.BOLD)).grid(row=2, column=0, padx=(0,10), sticky='w')
+        self.multiplefoldervis = Label(visframegrid, font=("Arial", 8), text='Select a folder...', background=LIGHT_GREY)
+        self.multiplefoldervis.grid(row=2, column=1, sticky='ew', padx=(0,10))
+        Button(visframegrid, text='Choose folder', image=self.FOLDER, command=self.select_multiple_folder_vis).grid(row=2, column=2, padx=(0,10))
+        Button(visframegrid, text='Open', command=self.visualization_multiple_folders_window).grid(row=2, column=3)
 
         load_config()
 

@@ -1,5 +1,5 @@
 from tkinter import Button, Label, Toplevel, Frame, font, IntVar, StringVar, Entry, messagebox
-from seaborn import lineplot, boxplot, heatmap
+from seaborn import lineplot, boxplot, heatmap, swarmplot, regplot
 from numpy import arange, array, corrcoef
 from pandas import concat, DataFrame
 
@@ -62,6 +62,17 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
     def get_mask(self, data):
         return array([[True if x < 0 else False for x in line] for line in data.to_numpy()])
 
+    def esense_attention_history_lineplot(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        lineplot(data=self.df, x='seq', y='esenseat', hue='tag', ax=ax)
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.set_xlabel('Samples')
+        ax.set_ylabel('eSense Attention')
+        ax.set_title('eSense Attention History')
+
+        self.canvas.draw()
+
     def esense_attention_history(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
@@ -77,12 +88,13 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
         mask = self.get_mask(data)
 
         heatmap(data, cmap='YlOrBr', ax=ax, mask=mask,
-            yticklabels=True, xticklabels=False,
-            cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+            yticklabels=True, xticklabels=False)
         
         ax.set_title('eSense Attention Heatmap')
         ax.set_xlabel('Samples')
         ax.set_ylabel('Files')
+        yticks = ax.get_yticklabels()
+        ax.set_yticklabels(yticks, rotation=0)
         self.canvas.draw()
 
     def esense_attention_variation(self) -> None:
@@ -112,12 +124,13 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
         mask = mask = self.get_mask(data)
 
         heatmap(data, cmap='Blues', ax=ax, mask=mask,
-            yticklabels=True, xticklabels=False,
-            cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+            yticklabels=True, xticklabels=False)
         
         ax.set_title('eSense Meditation Heatmap')
         ax.set_xlabel('Samples')
         ax.set_ylabel('Files')
+        yticks = ax.get_yticklabels()
+        ax.set_yticklabels(yticks, rotation=0)
         self.canvas.draw()
 
     def esense_meditation_variation(self) -> None:
@@ -137,9 +150,11 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
     def generated_attention_variation(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        boxplot(data=self.df, y=self.genat_type, x='tag', hue='tag', ax=ax, dodge=False)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.set_xticklabels([])
+        
+        boxplot(data=self.df, y=self.genat_type, x='tag', ax=ax, linewidth=1,
+                medianprops=dict(color='#750101', linewidth=2),
+                boxprops=dict(facecolor='#ff8f87', edgecolor='black'))
+
         ax.set_xlabel('Files')
         ax.set_ylabel('Generated Attention')
         ax.set_title('Generated Attention ('+ str(self.genat_type.split('_')[1]) +') Variation')
@@ -149,9 +164,11 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
     def generated_meditation_variation(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        boxplot(data=self.df, y=self.genmed_type, x='tag', hue='tag', ax=ax, dodge=False)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.set_xticklabels([])
+        
+        boxplot(data=self.df, y=self.genmed_type, x='tag', ax=ax, linewidth=1,
+                medianprops=dict(color='#012775', linewidth=2),
+                boxprops=dict(facecolor='#678ee0', edgecolor='black'))
+        
         ax.set_xlabel('Files')
         ax.set_ylabel('Generated Meditation')
         ax.set_title('Generated Meditation ('+ str(self.genmed_type.split('_')[1]) +') Variation')
@@ -175,7 +192,8 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
                     yticklabels=False, xticklabels=vars)
         ax.set_title('eSense Attention and ' + self.genat_type.split('_')[1] + ' Pearson Correlation')
         ax.set_xlabel('Correlations')
-
+        xticks = ax.get_xticklabels()
+        ax.set_xticklabels(xticks, rotation=90)
         self.canvas.draw()
 
     def meditation_correlation(self) -> None:
@@ -195,7 +213,8 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
                     yticklabels=False, xticklabels=vars)
         ax.set_title('eSense Meditation and ' + self.genmed_type.split('_')[1] + ' Pearson Correlation')
         ax.set_xlabel('Correlations')
-
+        xticks = ax.get_xticklabels()
+        ax.set_xticklabels(xticks, rotation=90)
         self.canvas.draw()
 
     def generated_attention_correlation(self) -> None:
@@ -230,21 +249,19 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
                 elif self.genmed_type == 'None': pass
                 elif self.genmed_type != gens['genmed']: self.genmed_type = 'None'
             else: self.genmed_type = 'None'
-
-            #scaler = MinMaxScaler((0,100))
-            #dfs[i][[self.genat_type,self.genmed_type]] = scaler.fit_transform(dfs[i][[self.genat_type,self.genmed_type]])
-            
-        self.df = concat(dfs, ignore_index=True)
-
-        self.create_singledatavis_opt('eSense Attention History', self.esense_attention_history)
-        self.create_singledatavis_opt('eSense Attention Variation', self.esense_attention_variation)
-        self.create_singledatavis_opt('eSense Meditation History', self.esense_meditation_history)
-        self.create_singledatavis_opt('eSense Meditation Variation', self.esense_meditation_variation)
-
+        
+        #self.create_singledatavis_opt('eSense Attention History Lineplot', self.esense_attention_history_lineplot)
+        self.create_singledatavis_opt('eSense Attention Heatmap', self.esense_attention_history)
+        self.create_singledatavis_opt('eSense Attention Boxplot', self.esense_attention_variation)
         if self.genat_type != 'None':
-            self.create_singledatavis_opt('Generated Attention Variation', self.generated_attention_variation)
+            self.create_singledatavis_opt('Generated Attention Boxplot', self.generated_attention_variation)
+
+        self.create_singledatavis_opt('eSense Meditation Heatmap', self.esense_meditation_history)
+        self.create_singledatavis_opt('eSense Meditation Boxplot', self.esense_meditation_variation)
         if self.genmed_type != 'None':
-            self.create_singledatavis_opt('Generated Meditation Variation', self.generated_meditation_variation)
+            self.create_singledatavis_opt('Generated Meditation Boxplot', self.generated_meditation_variation)
 
         self.create_multipledatavis_opt('eSense and Generated Attention Correlation', self.attention_correlation)
         self.create_multipledatavis_opt('eSense and Generated Meditation Correlation', self.meditation_correlation)
+
+        self.df = concat(dfs, ignore_index=True)
