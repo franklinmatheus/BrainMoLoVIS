@@ -23,8 +23,7 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         heatmap([self.df['esenseat']], cmap='Spectral_r', ax=ax, 
-                    yticklabels=False, xticklabels=False,
-                    cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+                yticklabels=False, xticklabels=False)
         ax.set_title('eSense Attention Heatmap')
         ax.set_xlabel('Samples')
 
@@ -46,8 +45,7 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         heatmap([self.df['esensemed']], cmap='Spectral_r', ax=ax, 
-                    yticklabels=False, xticklabels=False,
-                    cbar_kws=dict(use_gridspec=False, location="bottom", shrink=0.5))
+                    yticklabels=False, xticklabels=False)
         ax.set_title('eSense Meditation Heatmap')
         ax.set_xlabel('Samples')
 
@@ -89,8 +87,8 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         heatmap(DataFrame.from_dict(values), cmap='rocket_r', ax=ax, annot=True)
 
         ax.set_title('Power Bands Pearson Correlation Matrix')
-        ax.set_yticklabels(['eSense Attention', 'eSense Meditation'])
-        ax.set_xticklabels(bands)
+        ax.set_yticklabels(['eSense Attention', 'eSense Meditation'], rotation=0)
+        ax.set_xticklabels(bands, rotation=90)
 
         self.canvas.draw()
 
@@ -100,10 +98,13 @@ class SingleFileVisualizationWindow(VisualizationWindow):
 
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        heatmap(self.df[cols].corr(method='pearson'), cmap='rocket_r', ax=ax, annot=True,
-                cbar_kws=dict(location="bottom", shrink=0.5))
+        heatmap(self.df[cols].corr(method='pearson'), cmap='rocket_r', ax=ax, annot=True)
 
         ax.set_title('Power Bands Pearson Correlation Matrix')
+        xticks = ax.get_xticklabels()
+        ax.set_xticklabels(xticks, rotation=90)
+        yticks = ax.get_yticklabels()
+        ax.set_yticklabels(yticks, rotation=0)
 
         self.canvas.draw()
 
