@@ -69,6 +69,10 @@ class App(Tk):
                 messagebox.showinfo('Error', 'Unable to open the multiple folder viewer with a unique folder.', parent=self)
                 return
             
+            if len(folder_names) == 0: 
+                messagebox.showinfo('Error', 'Unable to open the multiple folder viewer with no folders.', parent=self)
+                return
+            
             dfs = []
             tags = []
 

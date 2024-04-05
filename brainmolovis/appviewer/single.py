@@ -16,7 +16,6 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         ax.set_title('eSense Attention History')
         ax.set_ylabel('eSense Attention')
         ax.set_xlabel('Samples')
-
         self.canvas.draw()
     
     def esense_attention_history_heatmap(self) -> None:
@@ -84,7 +83,7 @@ class SingleFileVisualizationWindow(VisualizationWindow):
 
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        heatmap(DataFrame.from_dict(values), cmap='rocket_r', ax=ax, annot=True)
+        heatmap(DataFrame.from_dict(values), cmap='Spectral_r', ax=ax, annot=True, vmin=-1, vmax=1)
 
         ax.set_title('Power Bands Pearson Correlation Matrix')
         ax.set_yticklabels(['eSense Attention', 'eSense Meditation'], rotation=0)
@@ -98,7 +97,7 @@ class SingleFileVisualizationWindow(VisualizationWindow):
 
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        heatmap(self.df[cols].corr(method='pearson'), cmap='rocket_r', ax=ax, annot=True)
+        heatmap(self.df[cols].corr(method='pearson'), cmap='Spectral_r', ax=ax, annot=True, vmin=-1, vmax=1)
 
         ax.set_title('Power Bands Pearson Correlation Matrix')
         xticks = ax.get_xticklabels()

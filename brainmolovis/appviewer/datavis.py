@@ -25,18 +25,27 @@ class VisualizationWindow(Toplevel):
         Label(opframe, text=title).pack(side='left')
 
     def save_figure(self) -> None:
+        file = asksaveasfile(parent=self, filetypes=[('PNG', '*.png')], defaultextension=[('PNG', '*.png')])
+        
+        self.fig.savefig(file.name, bbox_inches='tight', dpi=200)
+
+    def set_size(self) -> None:
         height = askfloat(parent=self, title='Figure height (inches)', prompt='Input the figure height in inches')
         width = askfloat(parent=self, title='Figure width (inches)', prompt='Input the figure width in inches')
 
         if height == None or height <= 0 or width == None or width <= 0:
             messagebox.showinfo('Error', 'Please, inform a valid input!')
             return 
+
+        ax = self.fig.get_axes()[0]
+
+        self.fig.clear()
+        self.canvas.draw()
+        self.fig.add_subplot(ax)
+        ax.text(0.5, 0.5, 'Select a visualization', horizontalalignment='center', verticalalignment='center')
+        self.fig.set_size_inches(width, height)
         
-        file = asksaveasfile(parent=self, filetypes=[('PNG', '*.png')], defaultextension=[('PNG', '*.png')])
-        
-        temp = self.fig
-        temp.set_size_inches(width, height)
-        temp.savefig(file.name, bbox_inches='tight', dpi=200)
+        self.canvas.draw()
 
     def set_title(self) -> None:
         title = askstring(parent=self, title='Figure title', prompt='Input the figure title')
@@ -118,6 +127,9 @@ class VisualizationWindow(Toplevel):
         
         self.savebutton = Button(botframe, text='Save PNG', command=self.save_figure)
         self.savebutton.pack(side='right', padx=(0,10))
+
+        self.setsize = Button(botframe, text='Set chart size', command=self.set_size)
+        self.setsize.pack(side='right', padx=(0,10))
 
         self.settitle = Button(botframe, text='Set chart title', command=self.set_title)
         self.settitle.pack(side='right', padx=(0,10))

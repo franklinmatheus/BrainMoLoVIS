@@ -125,6 +125,6 @@ class MultipleFoldersVisualizationWindow(VisualizationWindow):
             else: self.genmed_type = 'None'
         
         self.create_singledatavis_opt('eSense Attention Boxplot', self.esense_attention_boxplot)
-        self.create_singledatavis_opt('eSense Attention Scatterplot', self.esense_attention_scatterplot)
+        self.create_singledatavis_opt('eSense Meditation Boxplot', self.esense_meditation_boxplot)
         
         self.df = concat(dfs, ignore_index=True)
