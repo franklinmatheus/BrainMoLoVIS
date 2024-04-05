@@ -44,7 +44,6 @@ class App(Tk):
 
     def visualization_multiple_files_window(self) -> None:
         if self.multiplefile_dir != '':
-            print(self.multiplefile_dir)
             dfs, files, file_error = load_folder_dataframes(self.multiplefile_dir)
 
             if len(dfs) > 1:

@@ -1,6 +1,6 @@
-from tkinter import Button, Label, PhotoImage, Toplevel, Frame, font, LabelFrame
+from tkinter import Button, Label, PhotoImage, Toplevel, Frame, font, LabelFrame, messagebox
 from tkinter.filedialog import asksaveasfile
-from tkinter.simpledialog import askfloat
+from tkinter.simpledialog import askfloat, askstring
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
@@ -28,11 +28,39 @@ class VisualizationWindow(Toplevel):
         height = askfloat(parent=self, title='Figure height (inches)', prompt='Input the figure height in inches')
         width = askfloat(parent=self, title='Figure width (inches)', prompt='Input the figure width in inches')
 
+        if height == None or height <= 0 or width == None or width <= 0:
+            messagebox.showinfo('Error', 'Please, inform a valid input!')
+            return 
+        
         file = asksaveasfile(parent=self, filetypes=[('PNG', '*.png')], defaultextension=[('PNG', '*.png')])
         
         temp = self.fig
         temp.set_size_inches(width, height)
         temp.savefig(file.name, bbox_inches='tight', dpi=200)
+
+    def set_title(self) -> None:
+        title = askstring(parent=self, title='Figure title', prompt='Input the figure title')
+
+        ax = self.fig.get_axes()[0]
+        self.fig.add_subplot(ax)
+        ax.set_title(title)
+        self.canvas.draw()
+
+    def set_xaxis_title(self) -> None:
+        xaxis = askstring(parent=self, title='X-axis title', prompt='Input the X-axis title')
+
+        ax = self.fig.get_axes()[0]
+        self.fig.add_subplot(ax)
+        ax.set_xlabel(xaxis)
+        self.canvas.draw()
+
+    def set_yaxis_title(self) -> None:
+        yaxis = askstring(parent=self, title='Y-axis title', prompt='Input the Y-axis title')
+
+        ax = self.fig.get_axes()[0]
+        self.fig.add_subplot(ax)
+        ax.set_ylabel(yaxis)
+        self.canvas.draw()
 
     def handle_close(self) -> None:
         self.destroy()
@@ -87,6 +115,17 @@ class VisualizationWindow(Toplevel):
         botframe = Frame(self)
 
         Button(botframe, text='Close', command=self.handle_close).pack(anchor='e', side='right')
+        
         self.savebutton = Button(botframe, text='Save PNG', command=self.save_figure)
-        self.savebutton.pack(side='right', padx=5)
+        self.savebutton.pack(side='right', padx=(0,10))
+
+        self.settitle = Button(botframe, text='Set chart title', command=self.set_title)
+        self.settitle.pack(side='right', padx=(0,10))
+
+        self.setxaxis = Button(botframe, text='Set X-axis title', command=self.set_xaxis_title)
+        self.setxaxis.pack(side='right', padx=(0,10))
+
+        self.setyaxis = Button(botframe, text='Set Y-axis title', command=self.set_yaxis_title)
+        self.setyaxis.pack(side='right', padx=(0,10))
+        
         botframe.pack(fill='x', side='bottom', padx=10, pady=(0,10))
