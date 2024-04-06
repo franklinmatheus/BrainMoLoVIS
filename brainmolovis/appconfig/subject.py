@@ -78,14 +78,14 @@ class InputSessionSubjectWindow(Toplevel):
         input.focus()
         input.insert(0, __subject_str)
         input.grid(row=0, column=1, pady=0, sticky='ew')
-        Label(inputsgrid, text='(e.g., Franklin, user01, Subject 10, etc.)', font=("Arial", 8), fg=DARK_GREY).grid(row=1, column=1, pady=(0,10), sticky='w')
+        Label(inputsgrid, text='(e.g., User, user01, Subject 10, etc.)', font=("Arial", 8), fg=DARK_GREY).grid(row=1, column=1, pady=(0,10), sticky='w')
 
         #title_ses = 'Session ID (*)' if is_session_required() else 'Session ID'
         Label(inputsgrid, text='Session ID').grid(row=2, column=0, pady=0, padx=(0,5))
         input = Entry(inputsgrid, textvariable=self.__session_str, border=1)
         input.insert(0, __session_str)
         input.grid(row=2, column=1, sticky='ew', pady=0)
-        Label(inputsgrid, text='(e.g., Session 1/4, Single Session, etc.)', font=("Arial", 8), fg=DARK_GREY).grid(row=3, column=1, sticky='w')
+        Label(inputsgrid, text='(e.g., S1, Session 1/4, S1#4, etc.)', font=("Arial", 8), fg=DARK_GREY).grid(row=3, column=1, sticky='w')
         Label(inputsgrid, text='Default: Single Session', font=("Arial", 8), fg=DARK_GREY).grid(row=4, column=1, sticky='w')
         inputsgrid.pack(fill='x', anchor='center', pady=(0, 10))
 
