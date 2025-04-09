@@ -79,6 +79,7 @@ class MultipleFoldersVisualizationWindow(VisualizationWindow):
                 boxprops=dict(facecolor='#ff8f87', edgecolor='black'))
 
         ax.set_xlabel('Folders')
+        ax.set_xticklabels([tag + ' (' + str(len(self.df[self.df['tag'] == tag]['ID'].unique())) + ')' for tag in self.df['tag'].unique()])
         ax.set_ylabel('eSense Attention')
         ax.set_title('eSense Attention Variation')
 
@@ -93,6 +94,7 @@ class MultipleFoldersVisualizationWindow(VisualizationWindow):
                 boxprops=dict(facecolor='#678ee0', edgecolor='black'))
 
         ax.set_xlabel('Folders')
+        ax.set_xticklabels([tag + ' (' + str(len(self.df[self.df['tag'] == tag]['ID'].unique())) + ')' for tag in self.df['tag'].unique()])
         ax.set_ylabel('eSense Meditation')
         ax.set_title('eSense Attention Meditation')
 
@@ -126,5 +128,7 @@ class MultipleFoldersVisualizationWindow(VisualizationWindow):
         
         self.create_singledatavis_opt('eSense Attention Boxplot', self.esense_attention_boxplot)
         self.create_singledatavis_opt('eSense Meditation Boxplot', self.esense_meditation_boxplot)
+        self.create_singledatavis_opt('Generated Attention Boxplot', self.esense_attention_boxplot)
+        self.create_singledatavis_opt('Generated Meditation Boxplot', self.esense_meditation_boxplot)
         
         self.df = concat(dfs, ignore_index=True)

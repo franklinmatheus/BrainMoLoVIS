@@ -3,6 +3,10 @@ from numpy import arange, corrcoef, full
 from scipy.stats import spearmanr
 from pandas import DataFrame
 
+import numpy as np
+from scipy import signal
+import matplotlib.pyplot as plt
+
 from brainmolovis.apputils.mindwavedata import *
 from brainmolovis.appviewer.datavis import VisualizationWindow
 
@@ -75,24 +79,48 @@ class SingleFileVisualizationWindow(VisualizationWindow):
     def esense_attention_histogram(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        histplot(self.df['esenseat'], bins=10, ax=ax, color='red')
+        histplot(self.df['esenseat'], bins=range(0,101,5), ax=ax, color='red')
         
         ax.set_title('eSense Attention Histogram')
         ax.set_xlabel('eSense Attention')
         ax.set_ylabel('Frequency')
         ax.set_xlim(0,100)
+        ax.set_xticks(range(0,101,10))
+        ax.set_xticklabels(range(0,101,10))
         self.canvas.draw()
 
     def esense_meditation_histogram(self) -> None:
         self.fig.clear()
         ax = self.fig.add_subplot(111)
-        histplot(self.df['esensemed'], bins=10, ax=ax, color='blue')
+        histplot(self.df['esensemed'], bins=range(0,101,5), ax=ax, color='blue')
         
         ax.set_title('eSense Meditation Histogram')
         ax.set_xlabel('eSense Meditation')
         ax.set_ylabel('Frequency')
         ax.set_xlim(0,100)
+        ax.set_xticks(range(0,101,10))
+        ax.set_xticklabels(range(0,101,10))
         self.canvas.draw()
+
+    def eeg_psd_welch(self) -> None:
+        self.fig.clear()
+        ax = self.fig.add_subplot(111)
+        
+        x = []
+
+        for index, row in self.df.iterrows():
+            x.extend([int(i)*(1.8/4096)/2000 for i in row['raweeg'].split(',') if i != ''])
+        
+        f, Pxx_den = signal.welch(x, 512)
+        ax.set(xscale="log", yscale="log")
+        
+        lineplot(x=f, y=Pxx_den, ax=ax)
+
+        ax.set_title('Power Spectral Density Estimation (Welch’s method)')
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('PSD [V^2/Hz]')
+        self.canvas.draw()
+
 
     def esense_power_bands_pearson_correlation(self) -> None:
         bands = ['delta','theta','lowalpha','highalpha','lowbeta','highbeta','lowgamma','highgamma']
@@ -167,7 +195,6 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         p_values = {}
         for band_i in cols:
             for band_j in cols:
-
                 if band_i not in corr_values: corr_values[band_i] = []
                 if band_i not in p_values: p_values[band_i] = []
                 
@@ -216,6 +243,7 @@ class SingleFileVisualizationWindow(VisualizationWindow):
         self.create_singledatavis_opt('eSense Meditation Lineplot', self.esense_meditation_history_line)
         self.create_singledatavis_opt('eSense Meditation Heatmap', self.esense_meditation_history_heatmap)
         self.create_singledatavis_opt('eSense Meditation Histogram', self.esense_meditation_histogram)
+        self.create_singledatavis_opt('EEG Power Spectral Density (Welch\'s method)', self.eeg_psd_welch)
         
         self.create_multipledatavis_opt('eSense and Power Bands Pearson Correlation', self.esense_power_bands_pearson_correlation)
         self.create_multipledatavis_opt('Power Bands Pearson Correlation', self.power_bands_pearson_correlation)

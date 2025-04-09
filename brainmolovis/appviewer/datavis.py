@@ -100,6 +100,7 @@ class VisualizationWindow(Toplevel):
         self.chartframe = Frame(mainframe, background='white', highlightbackground='black', highlightthickness=1, padx=5, pady=5)
         self.chartframe.pack(expand=True, fill='both', side='right')
 
+        set_theme()
         self.fig = Figure(tight_layout=True)
         ax = self.fig.add_subplot(111)
         ax.text(0.5, 0.5, 'Select a visualization', horizontalalignment='center', verticalalignment='center')
@@ -118,8 +119,6 @@ class VisualizationWindow(Toplevel):
         #self.canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
 
         #self.canvas.mpl_connect('key_press_event', on_key_press)
-
-        set_theme()
 
         botframe = Frame(self)
 

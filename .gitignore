@@ -138,3 +138,5 @@ server/
 *_local.csv
 bmlvis.zip
 *.ipynb
+dist*
+*.bak

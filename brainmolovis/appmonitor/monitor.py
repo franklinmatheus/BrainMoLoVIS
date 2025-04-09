@@ -251,7 +251,7 @@ class MonitoringWindow(Toplevel):
                         fileout.write(str(self.sep).join(output_row) + '\n')
                         output_row = ['']*len(self.file_format_seq)
 
-        remove(self.export_file_temp_log)
+        #remove(self.export_file_temp_log)
 
     def start_pause_recording(self, event=None):
         if self.read_mindwave_data == False: return

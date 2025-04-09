@@ -261,7 +261,9 @@ class MultipleFilesVisualizationWindow(VisualizationWindow):
         if self.genmed_type != 'None':
             self.create_singledatavis_opt('Generated Meditation Boxplot', self.generated_meditation_variation)
 
-        self.create_multipledatavis_opt('eSense and Generated Attention Correlation', self.attention_correlation)
-        self.create_multipledatavis_opt('eSense and Generated Meditation Correlation', self.meditation_correlation)
+        self.create_multipledatavis_opt('eSense and Generated Attention Pearson Correlation', self.attention_correlation)
+        self.create_multipledatavis_opt('eSense and Generated Meditation Pearson Correlation', self.meditation_correlation)
+        self.create_multipledatavis_opt('eSense and Generated Attention Spearman Correlation', self.attention_correlation)
+        self.create_multipledatavis_opt('eSense and Generated Meditation Spearman Correlation', self.meditation_correlation)
 
         self.df = concat(dfs, ignore_index=True)

@@ -79,7 +79,7 @@ class App(Tk):
             for folder_name in folder_names:
                 folder_dfs, files, file_error = load_folder_dataframes(join(self.multiplefolder_dir, folder_name))
 
-                if len(folder_dfs) > 1:
+                if len(folder_dfs) >= 1:
                     inputtags = SetFolderTagWindow(self, folder_name, files)
                     inputtags.grab_set()
                     self.wait_variable(inputtags.get_inputed())
@@ -96,8 +96,8 @@ class App(Tk):
                         dfs.append(df)
                         tags.append(folder_tag)
 
-                elif len(folder_dfs) == 1: 
-                    messagebox.showinfo('Error', 'Unable to open the multiple datafile viewer with a unique file.', parent=self)
+                #elif len(folder_dfs) == 1: 
+                #    messagebox.showinfo('Error', 'Unable to open the multiple datafile viewer with a unique file.', parent=self)
                 else: messagebox.showinfo('Error', 'Unable to load ' + file_error + ' correctly.', parent=self)
 
             self.visualizationwindow = MultipleFoldersVisualizationWindow(self, dfs, folder_names, tags)
